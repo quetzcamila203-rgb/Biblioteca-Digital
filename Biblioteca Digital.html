@@ -1,0 +1,2935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ateneo &amp; Sala Viva — Sistema Integral de Biblioteca</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['"Crimson Pro"', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ========================================================================
+       1. TOKENS DE DISEÑO Y PALETAS EDITORIALES
+       ======================================================================== */
+    :root, [data-theme="wood-parchment"] {
+      --bg-app: #f5efe4;
+      --bg-surface: #fffdf9;
+      --bg-surface-alt: #faf4e8;
+      --bg-nav: rgba(255, 253, 249, 0.95);
+      --text-primary: #241911;
+      --text-secondary: #5c4634;
+      --text-muted: #8a715c;
+      --border-color: #e4d4bc;
+      --accent-primary: #7c3f1d;
+      --accent-primary-hover: #5e2e13;
+      --accent-secondary: #1b5e43;
+      --accent-soft: #f5e5cf;
+      --accent-soft-text: #6b3416;
+      --banner-gradient: linear-gradient(135deg, #47200e 0%, #7c3f1d 55%, #1b5e43 100%);
+      --card-shadow: 0 8px 24px -6px rgba(52, 31, 14, 0.08);
+    }
+
+    [data-theme="emerald-grove"] {
+      --bg-app: #edf6f0;
+      --bg-surface: #ffffff;
+      --bg-surface-alt: #f4faf6;
+      --bg-nav: rgba(255, 255, 255, 0.95);
+      --text-primary: #12291e;
+      --text-secondary: #416252;
+      --text-muted: #6d8f7e;
+      --border-color: #d3e7da;
+      --accent-primary: #156534;
+      --accent-primary-hover: #0f4c26;
+      --accent-secondary: #9a5b13;
+      --accent-soft: #dcfce7;
+      --accent-soft-text: #14532d;
+      --banner-gradient: linear-gradient(135deg, #0d3b24 0%, #156534 55%, #0f766e 100%);
+      --card-shadow: 0 8px 24px -6px rgba(18, 41, 30, 0.08);
+    }
+
+    [data-theme="night-reading"] {
+      --bg-app: #0f1419;
+      --bg-surface: #172028;
+      --bg-surface-alt: #1e2934;
+      --bg-nav: rgba(23, 32, 40, 0.96);
+      --text-primary: #f1f5f9;
+      --text-secondary: #b7c5d3;
+      --text-muted: #7c8e9f;
+      --border-color: #2b3948;
+      --accent-primary: #d99b43;
+      --accent-primary-hover: #c1852e;
+      --accent-secondary: #34d399;
+      --accent-soft: rgba(217, 155, 67, 0.16);
+      --accent-soft-text: #fcd38d;
+      --banner-gradient: linear-gradient(135deg, #1a2639 0%, #2b3d52 55%, #15423b 100%);
+      --card-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      transition: background-color 0.25s ease, color 0.25s ease;
+      overflow-x: hidden;
+    }
+
+    .surface-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+    }
+
+    .surface-alt {
+      background-color: var(--bg-surface-alt);
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-glass {
+      background-color: var(--bg-nav);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-color: var(--border-color);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-primary);
+      color: #ffffff;
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .badge-soft {
+      background-color: var(--accent-soft);
+      color: var(--accent-soft-text);
+    }
+
+    .hero-banner {
+      background: var(--banner-gradient);
+    }
+
+    .spine-accent {
+      position: relative;
+      overflow: hidden;
+    }
+    .spine-accent::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+      opacity: 0.9;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-view {
+      animation: fadeSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ========================================================================
+       2. PANTALLA DE CARGA A PANTALLA COMPLETA (10 SEGUNDOS)
+       ======================================================================== */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 20px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 35%, #442412 0%, #241309 62%, #120804 100%);
+      color: #fffbeb;
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+
+    #splash-screen.splash-hiding {
+      opacity: 0;
+      transform: scale(1.02);
+      pointer-events: none;
+    }
+
+    @keyframes floatSpark {
+      0%, 100% { transform: translateY(0px) scale(0.85); opacity: 0.25; }
+      50% { transform: translateY(-22px) scale(1.2); opacity: 0.85; }
+    }
+    .splash-spark {
+      animation: floatSpark 4s ease-in-out infinite;
+    }
+
+    @keyframes lampGlow {
+      0%, 100% { opacity: 0.35; transform: scale(0.96); }
+      50% { opacity: 0.85; transform: scale(1.05); }
+    }
+    .lamp-aura {
+      transform-origin: 100px 68px;
+      animation: lampGlow 3.2s ease-in-out infinite;
+    }
+
+    @keyframes bookFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    .book-bob {
+      animation: bookFloat 3.6s ease-in-out infinite;
+    }
+
+    @keyframes soundWave {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    .sound-bar {
+      animation: soundWave 1.1s ease-in-out infinite;
+    }
+
+    /* Código de barras visual para credenciales y códigos */
+    .barcode-bars {
+      height: 30px;
+      background-image: repeating-linear-gradient(
+        to right,
+        #1e140c 0px,
+        #1e140c 2px,
+        transparent 2px,
+        transparent 4px,
+        #1e140c 4px,
+        #1e140c 5px,
+        transparent 5px,
+        transparent 8px,
+        #1e140c 8px,
+        #1e140c 11px,
+        transparent 11px,
+        transparent 13px
+      );
+    }
+
+    /* Impresión exclusiva de credencial */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printable-credential-zone,
+      #printable-credential-zone * {
+        visibility: visible !important;
+      }
+      #printable-credential-zone {
+        position: fixed !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 115mm !important;
+        max-width: 115mm !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body data-theme="wood-parchment" class="min-h-screen flex flex-col lg:flex-row antialiased">
+
+  <!-- ======================================================================
+       PANTALLA DE CARGA A PANTALLA COMPLETA (10,000 ms)
+       ====================================================================== -->
+  <div id="splash-screen" role="dialog" aria-label="Cargando Ateneo y Sala Viva" class="select-none">
+    <!-- Destellos ambientales -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+      <span class="splash-spark absolute w-2.5 h-2.5 rounded-full bg-amber-300/70" style="top: 16%; left: 18%; animation-delay: 0s;"></span>
+      <span class="splash-spark absolute w-3 h-3 rounded-full bg-orange-200/60" style="top: 24%; right: 18%; animation-delay: 0.7s;"></span>
+      <span class="splash-spark absolute w-2 h-2 rounded-full bg-emerald-300/70" style="top: 66%; left: 15%; animation-delay: 1.4s;"></span>
+      <span class="splash-spark absolute w-3 h-3 rounded-full bg-amber-200/50" style="top: 72%; right: 20%; animation-delay: 0.4s;"></span>
+    </div>
+
+    <!-- Encabezado superior -->
+    <div class="relative z-10 w-full max-w-md text-center pt-1">
+      <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-200 bg-white/10 border border-white/15 px-3.5 py-1.5 rounded-full">
+        <i class="ph-fill ph-books text-amber-300"></i> Archivo &amp; Sala de Lectura
+      </span>
+    </div>
+
+    <!-- Centro: Ilustración de lámpara y libro abierto + progreso -->
+    <div class="relative z-10 w-full max-w-md flex flex-col items-center text-center my-auto px-2">
+      <div class="w-40 h-40 sm:w-44 sm:h-44 mb-3 flex items-center justify-center relative">
+        <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-[0_12px_22px_rgba(0,0,0,0.45)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Resplandor cálido de lámpara -->
+          <circle class="lamp-aura" cx="100" cy="64" r="46" fill="#fbbf24" opacity="0.22"/>
+          <!-- Lámpara colgante de lectura -->
+          <line x1="100" y1="10" x2="100" y2="42" stroke="#fcd34d" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M74 62C74 48 126 48 126 62H74Z" fill="#d97706"/>
+          <ellipse cx="100" cy="63" rx="14" ry="4" fill="#fef08a"/>
+
+          <!-- Libro abierto flotante -->
+          <g class="book-bob">
+            <path d="M34 152C34 145 86 145 100 153C114 145 166 145 166 152V160C166 167 114 167 100 159C86 167 34 167 34 160V152Z" fill="#92400e"/>
+            <path d="M100 96C78 90 48 92 38 99V150C50 144 78 144 100 152V96Z" fill="#fffbeb" stroke="#e5c99b" stroke-width="1.5"/>
+            <path d="M100 96C122 90 152 92 162 99V150C150 144 122 144 100 152V96Z" fill="#fef6e4" stroke="#e5c99b" stroke-width="1.5"/>
+            <line x1="100" y1="96" x2="100" y2="152" stroke="#78350f" stroke-width="2.5"/>
+            <line x1="48" y1="110" x2="88" y2="108" stroke="#b45309" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+            <line x1="48" y1="120" x2="84" y2="118" stroke="#b45309" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+            <line x1="112" y1="110" x2="152" y2="108" stroke="#15803d" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+            <line x1="112" y1="120" x2="148" y2="118" stroke="#b45309" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+          </g>
+        </svg>
+      </div>
+
+      <h1 class="font-serif font-extrabold text-3xl sm:text-4xl tracking-tight leading-tight">
+        Ateneo &amp; <span class="text-amber-300">Sala Viva</span>
+      </h1>
+      <p id="splash-status-msg" class="text-xs sm:text-sm text-amber-100/90 font-medium mt-1.5 min-h-[20px]">
+        Encendiendo la lámpara de lectura...
+      </p>
+
+      <!-- Barra de progreso de 10 segundos -->
+      <div class="w-full max-w-xs mt-4">
+        <div class="w-full h-2.5 rounded-full bg-white/15 overflow-hidden p-0.5">
+          <div id="splash-progress-bar" class="h-full rounded-full bg-gradient-to-r from-amber-400 via-yellow-200 to-emerald-400" style="width: 0%;"></div>
+        </div>
+        <div class="flex justify-between text-[11px] font-mono text-amber-200/80 font-semibold mt-1.5">
+          <span id="splash-timer-label">0.0s / 10.0s</span>
+          <span id="splash-percent">0%</span>
+        </div>
+      </div>
+
+      <!-- Controles rápidos en pantalla de carga -->
+      <div class="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+        <button type="button" id="splash-sound-btn" onclick="activateAmbientFromSplash()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold bg-white/15 hover:bg-white/25 border border-white/25 transition">
+          <i class="ph-fill ph-speaker-high text-amber-300 text-base"></i>
+          <span id="splash-sound-btn-text">Activar sonido de lectura</span>
+        </button>
+        <button type="button" id="splash-enter-btn" onclick="dismissSplashScreen()"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold bg-amber-400 text-stone-950 hover:bg-amber-300 transition shadow">
+          <span>Entrar ahora</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pie de pantalla de carga -->
+    <div class="relative z-10 w-full max-w-md text-center text-[11px] text-amber-200/65 pb-1">
+      Cada libro abre un mundo nuevo • Préstamos, Materias y Credenciales PDF
+    </div>
+  </div>
+
+  <!-- TOASTS FLOTANTES -->
+  <div id="toast-container" class="fixed top-4 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- MODAL GENÉRICO -->
+  <div id="modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+    <div id="modal-content" class="surface-card rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative animate-view"></div>
+  </div>
+
+  <!-- ======================================================================
+       BARRA LATERAL ESCRITORIO (lg+)
+       ====================================================================== -->
+  <aside class="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 nav-glass border-r z-30 px-4 py-6 justify-between">
+    <div>
+      <div class="flex items-center gap-3 px-2 mb-7">
+        <div class="w-11 h-11 rounded-2xl hero-banner flex items-center justify-center text-white shadow-md shrink-0">
+          <i class="ph-fill ph-book-open-text text-2xl"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-serif font-extrabold text-lg leading-tight tracking-tight truncate">Ateneo &amp; Sala Viva</h1>
+          <span class="text-[11px] font-medium block truncate" style="color: var(--text-muted);">Gestión Bibliotecaria</span>
+        </div>
+      </div>
+
+      <nav id="desktop-nav" class="flex flex-col gap-1" aria-label="Navegación principal"></nav>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <button type="button" onclick="toggleLibraryAmbient()"
+        class="w-full surface-alt hover:opacity-90 rounded-2xl p-3 flex items-center justify-between transition-all text-left">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl badge-soft flex items-center justify-center shrink-0">
+            <i id="sidebar-audio-icon" class="ph-fill ph-speaker-slash text-lg"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs font-bold block truncate" id="sidebar-audio-label">Ambiente: Silencio</span>
+            <span class="text-[11px] block truncate" style="color: var(--text-muted);" id="sidebar-audio-sub">Toca para activar</span>
+          </div>
+        </div>
+        <div id="sidebar-audio-waves" class="hidden items-end gap-0.5 h-3.5 px-1">
+          <span class="sound-bar w-0.5 h-full rounded-full bg-amber-500" style="animation-delay: 0s;"></span>
+          <span class="sound-bar w-0.5 h-full rounded-full bg-amber-500" style="animation-delay: 0.25s;"></span>
+          <span class="sound-bar w-0.5 h-full rounded-full bg-amber-500" style="animation-delay: 0.5s;"></span>
+        </div>
+      </button>
+
+      <div class="surface-alt rounded-2xl p-3.5">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Estado de Sala</span>
+          <span id="sidebar-overdue-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full badge-soft">0 vencidos</span>
+        </div>
+        <p id="sidebar-books-summary" class="text-xs font-semibold">0 títulos • 0 disp.</p>
+        <p id="sidebar-loans-summary" class="text-[11px] mt-0.5" style="color: var(--text-secondary);">0 préstamos activos</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================================================================
+       HEADER MÓVIL / TABLET
+       ====================================================================== -->
+  <header class="lg:hidden sticky top-0 z-30 nav-glass border-b px-4 py-3 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-9 h-9 rounded-xl hero-banner flex items-center justify-center text-white shadow-sm shrink-0">
+        <i class="ph-fill ph-book-open-text text-xl"></i>
+      </div>
+      <div class="min-w-0">
+        <span class="font-serif font-extrabold text-base tracking-tight block leading-none truncate">Ateneo &amp; Sala Viva</span>
+        <span class="text-[11px] font-medium truncate block" style="color: var(--text-secondary);">Sistema de Biblioteca</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+      <button type="button" onclick="toggleLibraryAmbient()"
+        class="w-9 h-9 rounded-xl surface-alt flex items-center justify-center relative transition-all"
+        title="Sonido ambiental de biblioteca">
+        <i id="mobile-audio-icon" class="ph-fill ph-speaker-slash text-lg"></i>
+        <span id="mobile-audio-dot" class="hidden w-2 h-2 rounded-full bg-amber-500 absolute top-1.5 right-1.5 animate-ping"></span>
+      </button>
+      <button type="button" onclick="navigateTo('prestamos')" class="btn-primary px-3 h-9 rounded-xl flex items-center justify-center gap-1 text-xs font-bold shadow-sm whitespace-nowrap">
+        <i class="ph-bold ph-arrows-left-right"></i>
+        <span>Prestar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       CONTENIDO PRINCIPAL
+       ====================================================================== -->
+  <main class="flex-1 lg:pl-72 pb-24 lg:pb-10 min-w-0">
+    <div id="app-view" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7 animate-view"></div>
+  </main>
+
+  <!-- BARRA INFERIOR MÓVIL -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 nav-glass border-t px-1 py-1.5 shadow-lg" aria-label="Menú inferior">
+    <div id="mobile-nav" class="flex items-center justify-around overflow-x-auto no-scrollbar gap-0.5"></div>
+  </nav>
+
+  <script>
+    /* ========================================================================
+       1. CONSTANTES, UTILIDADES DE FECHA Y CATÁLOGO AMPLIO (24 LIBROS)
+       ======================================================================== */
+    const STORAGE_KEY = 'ateneo_sala_viva_biblioteca_v3';
+
+    const SUBJECT_STYLES = {
+      'Programación': { badge: 'bg-sky-100 text-sky-900 border-sky-200', icon: 'ph-code' },
+      'Matemáticas': { badge: 'bg-indigo-100 text-indigo-900 border-indigo-200', icon: 'ph-function' },
+      'Física': { badge: 'bg-violet-100 text-violet-900 border-violet-200', icon: 'ph-atom' },
+      'Literatura y Ficción': { badge: 'bg-amber-100 text-amber-900 border-amber-200', icon: 'ph-book-open' },
+      'Filosofía': { badge: 'bg-stone-200 text-stone-900 border-stone-300', icon: 'ph-lamp' },
+      'Historia y Ciencia': { badge: 'bg-emerald-100 text-emerald-900 border-emerald-200', icon: 'ph-compass' },
+      'Psicología y Hábitos': { badge: 'bg-rose-100 text-rose-900 border-rose-200', icon: 'ph-brain' },
+      'Arte y Diseño': { badge: 'bg-orange-100 text-orange-900 border-orange-200', icon: 'ph-palette' }
+    };
+
+    function generateBookCoverDataURL(title, author, subject, regCode) {
+      const palette = {
+        'Programación': ['#0f172a', '#0369a1', '#38bdf8'],
+        'Matemáticas': ['#1e1b4b', '#3730a3', '#a5b4fc'],
+        'Física': ['#2e1065', '#6b21a8', '#e879f9'],
+        'Literatura y Ficción': ['#451a03', '#9a3412', '#fcd34d'],
+        'Filosofía': ['#1c1917', '#57534e', '#fde68a'],
+        'Historia y Ciencia': ['#064e3b', '#0f766e', '#6ee7b7'],
+        'Psicología y Hábitos': ['#4c0519', '#9f1239', '#fda4af'],
+        'Arte y Diseño': ['#431407', '#c2410c', '#fdba74']
+      };
+      const [c1, c2, accent] = palette[subject] || palette['Literatura y Ficción'];
+      const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const tShort = esc(title.length > 32 ? title.slice(0, 30) + '…' : title);
+      const aShort = esc(author.length > 26 ? author.slice(0, 24) + '…' : author);
+      const sShort = esc(subject.toUpperCase());
+      const codeShort = esc(regCode || 'LIB-0000');
+
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='580' viewBox='0 0 420 580'>
+        <defs>
+          <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='${c1}'/>
+            <stop offset='100%' stop-color='${c2}'/>
+          </linearGradient>
+        </defs>
+        <rect width='420' height='580' fill='url(#g)'/>
+        <rect x='0' y='0' width='20' height='580' fill='#000000' fill-opacity='0.35'/>
+        <rect x='36' y='26' width='358' height='528' rx='14' fill='none' stroke='${accent}' stroke-opacity='0.45' stroke-width='2'/>
+        <circle cx='215' cy='160' r='64' fill='${accent}' fill-opacity='0.14'/>
+        <path d='M168 182c24-11 47-11 47 5 0-16 23-16 47-5v-60c-24-11-47-11-47 5 0-16-23-16-47-5z' fill='none' stroke='${accent}' stroke-width='4.5' stroke-linejoin='round'/>
+        <text x='215' y='268' text-anchor='middle' fill='${accent}' font-family='monospace' font-size='13' font-weight='bold' letter-spacing='2'>${sShort}</text>
+        <text x='215' y='318' text-anchor='middle' fill='#ffffff' font-family='Georgia,serif' font-size='26' font-weight='bold'>${tShort}</text>
+        <line x1='105' y1='348' x2='325' y2='348' stroke='${accent}' stroke-opacity='0.5' stroke-width='1.5'/>
+        <text x='215' y='386' text-anchor='middle' fill='#f8fafc' fill-opacity='0.9' font-family='sans-serif' font-size='17'>${aShort}</text>
+        <rect x='135' y='478' width='160' height='32' rx='8' fill='#000000' fill-opacity='0.35'/>
+        <text x='215' y='499' text-anchor='middle' fill='${accent}' font-family='monospace' font-size='13' font-weight='bold'>${codeShort}</text>
+      </svg>`;
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+    }
+
+    const DEFAULT_COVER_SVG = generateBookCoverDataURL('Ateneo Clásico', 'Acervo General', 'Literatura y Ficción', 'LIB-GEN');
+
+    const RECOMMENDED_CATALOG = [
+      {
+        id: 'rec-prog-1', regCode: 'PRG-101-A', title: 'Código Limpio: Artesanía de Software',
+        author: 'Robert C. Martin', year: 2008, subject: 'Programación', isbn: '978-0132350884',
+        shelf: 'Sala Tech • P-01', level: 'Intermedio', readTime: '7h lectura', recommended: true,
+        motivatingSummary: 'Transforma código enredado en sistemas claros y mantenibles. Ideal para escribir software sólido y fácil de entender.',
+        whyRead: 'Cultiva hábitos concretos para nombrar bien, estructurar funciones y evitar errores costosos.'
+      },
+      {
+        id: 'rec-prog-2', regCode: 'PRG-102-B', title: 'El Programador Pragmático',
+        author: 'Andrew Hunt y David Thomas', year: 2019, subject: 'Programación', isbn: '978-0135957059',
+        shelf: 'Sala Tech • P-02', level: 'Todos los niveles', readTime: '8h lectura', recommended: true,
+        motivatingSummary: 'Una guía directa y práctica para pensar con criterio técnico, automatizar tareas repetitivas y aprender continuamente.',
+        whyRead: 'Aporta mentalidad resolutiva que trasciende cualquier lenguaje o marco de trabajo.'
+      },
+      {
+        id: 'rec-prog-3', regCode: 'PRG-103-C', title: 'Algoritmos Ilustrados (Grokking Algorithms)',
+        author: 'Aditya Y. Bhargava', year: 2016, subject: 'Programación', isbn: '978-1617292231',
+        shelf: 'Sala Tech • P-03', level: 'Principiante', readTime: '5h lectura', recommended: false,
+        motivatingSummary: 'Búsquedas, grafos, recursión y programación dinámica explicados con esquemas visuales y ejemplos cotidianos.',
+        whyRead: 'Hace accesible la lógica algorítmica desde cero con ejemplos visuales muy claros.'
+      },
+      {
+        id: 'rec-mat-1', regCode: 'MAT-201-A', title: 'Cómo Plantear y Resolver Problemas',
+        author: 'George Pólya', year: 1945, subject: 'Matemáticas', isbn: '978-0691119670',
+        shelf: 'Sala Ciencias • M-01', level: 'Todos los niveles', readTime: '6h lectura', recommended: true,
+        motivatingSummary: 'Un clásico indispensable para saber qué hacer cuando un problema parece bloqueado al principio. Entrena la intuición matemática.',
+        whyRead: 'Sus estrategias de razonamiento sirven en matemáticas, ingeniería y toma de decisiones.'
+      },
+      {
+        id: 'rec-mat-2', regCode: 'MAT-202-B', title: 'El Diablo de los Números',
+        author: 'Hans Magnus Enzensberger', year: 1997, subject: 'Matemáticas', isbn: '978-8420636044',
+        shelf: 'Sala Ciencias • M-02', level: 'Principiante', readTime: '4.5h lectura', recommended: true,
+        motivatingSummary: 'Un joven que rechaza los números descubre en sueños la magia de los primos, patrones y el infinito de forma amena.',
+        whyRead: 'Despierta el gusto por las matemáticas mediante una lectura ágil y llena de ingenio.'
+      },
+      {
+        id: 'rec-mat-3', regCode: 'MAT-203-C', title: 'La Armonía de las Esferas y los Números',
+        author: 'Ian Stewart', year: 2017, subject: 'Matemáticas', isbn: '978-8498929897',
+        shelf: 'Sala Ciencias • M-03', level: 'Intermedio', readTime: '7h lectura', recommended: false,
+        motivatingSummary: 'Explora cómo la simetría, la geometría y la probabilidad revelan patrones ocultos en la naturaleza.',
+        whyRead: 'Conecta conceptos matemáticos abstractos con fenómenos reales del entorno.'
+      },
+      {
+        id: 'rec-fis-1', regCode: 'FIS-301-A', title: 'Siete Breves Lecciones de Física',
+        author: 'Carlo Rovelli', year: 2014, subject: 'Física', isbn: '978-0399184413',
+        shelf: 'Sala Ciencias • F-01', level: 'Principiante', readTime: '2.5h lectura', recommended: true,
+        motivatingSummary: 'Relatividad general, física cuántica, gravedad y tiempo explicados en capítulos breves y evocadores.',
+        whyRead: 'Ideal para acercarte a la física moderna en pocas horas con gran claridad.'
+      },
+      {
+        id: 'rec-fis-2', regCode: 'FIS-302-B', title: 'Seis Piezas Fáciles',
+        author: 'Richard P. Feynman', year: 1994, subject: 'Física', isbn: '978-0465025275',
+        shelf: 'Sala Ciencias • F-02', level: 'Intermedio', readTime: '5h lectura', recommended: true,
+        motivatingSummary: 'La curiosidad contagiosa de Feynman hace comprensibles los átomos, la energía y la conservación física.',
+        whyRead: 'Inspira a observar el mundo con preguntas claras y pensamiento crítico.'
+      },
+      {
+        id: 'rec-fis-3', regCode: 'FIS-303-C', title: 'El Orden del Tiempo',
+        author: 'Carlo Rovelli', year: 2018, subject: 'Física', isbn: '978-0735216105',
+        shelf: 'Sala Ciencias • F-03', level: 'Intermedio', readTime: '5.5h lectura', recommended: false,
+        motivatingSummary: 'Analiza por qué sentimos el paso del tiempo y cómo la física y la memoria humana interpretan el cambio.',
+        whyRead: 'Une ciencia fundamental y reflexión sobre el tiempo vivido.'
+      },
+      {
+        id: 'rec-lit-1', regCode: 'LIT-401-A', title: 'Cien Años de Soledad',
+        author: 'Gabriel García Márquez', year: 1967, subject: 'Literatura y Ficción', isbn: '978-0307474728',
+        shelf: 'Sala Letras • L-01', level: 'Todos los niveles', readTime: '14h lectura', recommended: true,
+        motivatingSummary: 'La saga de los Buendía en Macondo atrapa desde su inicio con realismo mágico, memoria y prosa memorable.',
+        whyRead: 'Una obra cumbre de la narrativa en español que deja huella duradera.'
+      },
+      {
+        id: 'rec-lit-2', regCode: 'LIT-402-B', title: 'El Nombre de la Rosa',
+        author: 'Umberto Eco', year: 1980, subject: 'Literatura y Ficción', isbn: '978-0156001311',
+        shelf: 'Sala Letras • L-02', level: 'Intermedio', readTime: '15h lectura', recommended: true,
+        motivatingSummary: 'Enigmas en una abadía medieval, manuscritos ocultos e investigación deductiva en una novela envolvente.',
+        whyRead: 'Combina intriga de misterio con el encanto de las grandes bibliotecas.'
+      },
+      {
+        id: 'rec-lit-3', regCode: 'LIT-403-C', title: 'Ficciones',
+        author: 'Jorge Luis Borges', year: 1944, subject: 'Literatura y Ficción', isbn: '978-0802130303',
+        shelf: 'Sala Letras • L-03', level: 'Todos los niveles', readTime: '4.5h lectura', recommended: false,
+        motivatingSummary: 'Relatos breves sobre bibliotecas infinitas, espejos y laberintos que estimulan la imaginación en cada página.',
+        whyRead: 'Perfecto para disfrutar cuentos breves densos en ideas y sugerencias.'
+      },
+      {
+        id: 'rec-fil-1', regCode: 'FIL-501-A', title: 'Meditaciones',
+        author: 'Marco Aurelio', year: 180, subject: 'Filosofía', isbn: '978-0812968255',
+        shelf: 'Sala Humanidades • H-01', level: 'Todos los niveles', readTime: '4h lectura', recommended: true,
+        motivatingSummary: 'Reflexiones breves y serenas sobre autocontrol, deber y calma frente a las distracciones cotidianas.',
+        whyRead: 'Brinda herramientas prácticas de serenidad y claridad interior.'
+      },
+      {
+        id: 'rec-fil-2', regCode: 'FIL-502-B', title: 'El Mundo de Sofía',
+        author: 'Jostein Gaarder', year: 1991, subject: 'Filosofía', isbn: '978-0374530716',
+        shelf: 'Sala Humanidades • H-02', level: 'Principiante', readTime: '12h lectura', recommended: true,
+        motivatingSummary: 'Una historia de misterio filosófico que recorre las grandes preguntas y corrientes del pensamiento humano.',
+        whyRead: 'Ofrece un panorama claro y narrativo de la historia de la filosofía.'
+      },
+      {
+        id: 'rec-fil-3', regCode: 'FIL-503-C', title: 'Cartas de un Estoico',
+        author: 'Séneca', year: 65, subject: 'Filosofía', isbn: '978-0140442106',
+        shelf: 'Sala Humanidades • H-03', level: 'Todos los niveles', readTime: '5h lectura', recommended: false,
+        motivatingSummary: 'Cartas cercanas sobre cómo valorar el tiempo, cultivar la amistad y vivir con coherencia.',
+        whyRead: 'Lectura pausada y lúcida con consejos aplicables a la vida diaria.'
+      },
+      {
+        id: 'rec-his-1', regCode: 'HIS-601-A', title: 'Breve Historia del Tiempo',
+        author: 'Stephen Hawking', year: 1988, subject: 'Historia y Ciencia', isbn: '978-0553380163',
+        shelf: 'Sala Ciencias • C-01', level: 'Intermedio', readTime: '6.5h lectura', recommended: true,
+        motivatingSummary: 'Un recorrido divulgativo por el origen del universo, la gravedad y los agujeros negros.',
+        whyRead: 'Acerca los grandes hitos de la cosmología a cualquier lector curioso.'
+      },
+      {
+        id: 'rec-his-2', regCode: 'HIS-602-B', title: 'Sapiens: De Animales a Dioses',
+        author: 'Yuval Noah Harari', year: 2011, subject: 'Historia y Ciencia', isbn: '978-0062316097',
+        shelf: 'Sala Humanidades • H-04', level: 'Todos los niveles', readTime: '11h lectura', recommended: true,
+        motivatingSummary: 'Analiza cómo el lenguaje, la cooperación y las narrativas compartidas moldearon las sociedades humanas.',
+        whyRead: 'Amplía la mirada histórica sobre cultura, economía y evolución social.'
+      },
+      {
+        id: 'rec-his-3', regCode: 'HIS-603-C', title: 'Cosmos',
+        author: 'Carl Sagan', year: 1980, subject: 'Historia y Ciencia', isbn: '978-0345539434',
+        shelf: 'Sala Ciencias • C-02', level: 'Todos los niveles', readTime: '9h lectura', recommended: false,
+        motivatingSummary: 'Un viaje inspirador por la historia de la ciencia, las estrellas y el método de investigar la naturaleza.',
+        whyRead: 'Combina rigor científico con entusiasmo por el descubrimiento.'
+      },
+      {
+        id: 'rec-psi-1', regCode: 'PSI-701-A', title: 'Hábitos Atómicos',
+        author: 'James Clear', year: 2018, subject: 'Psicología y Hábitos', isbn: '978-0735211292',
+        shelf: 'Sala Desarrollo • D-01', level: 'Todos los niveles', readTime: '5.5h lectura', recommended: true,
+        motivatingSummary: 'Pequeños cambios diarios sostenidos ayudan a construir rutinas de lectura, estudio y enfoque duradero.',
+        whyRead: 'Propone pasos claros para convertir metas en hábitos cotidianos.'
+      },
+      {
+        id: 'rec-psi-2', regCode: 'PSI-702-B', title: 'Pensar Rápido, Pensar Despacio',
+        author: 'Daniel Kahneman', year: 2011, subject: 'Psicología y Hábitos', isbn: '978-0374533557',
+        shelf: 'Sala Desarrollo • D-02', level: 'Intermedio', readTime: '12h lectura', recommended: false,
+        motivatingSummary: 'Explica los dos sistemas de pensamiento humano y cómo los sesgos influyen en nuestras decisiones.',
+        whyRead: 'Mejora la autoconciencia al juzgar información y tomar decisiones.'
+      },
+      {
+        id: 'rec-psi-3', regCode: 'PSI-703-C', title: 'El Hombre en Busca de Sentido',
+        author: 'Viktor E. Frankl', year: 1946, subject: 'Psicología y Hábitos', isbn: '978-0807014295',
+        shelf: 'Sala Desarrollo • D-03', level: 'Todos los niveles', readTime: '4h lectura', recommended: true,
+        motivatingSummary: 'Reflexión profunda sobre la resiliencia y la búsqueda de propósito en momentos difíciles.',
+        whyRead: 'Obra breve y conmovedora sobre fortaleza interior y sentido vital.'
+      },
+      {
+        id: 'rec-art-1', regCode: 'ART-801-A', title: 'El Diseño de las Cosas Cotidianas',
+        author: 'Don Norman', year: 2013, subject: 'Arte y Diseño', isbn: '978-0465050659',
+        shelf: 'Sala Arte • A-01', level: 'Principiante', readTime: '6.5h lectura', recommended: true,
+        motivatingSummary: 'Explica qué hace que un objeto o interfaz sea intuitivo y fácil de usar para las personas.',
+        whyRead: 'Te invita a observar el diseño útil y humano detrás de los objetos diarios.'
+      },
+      {
+        id: 'rec-art-2', regCode: 'ART-802-B', title: 'Roba Como un Artista',
+        author: 'Austin Kleon', year: 2012, subject: 'Arte y Diseño', isbn: '978-0761169253',
+        shelf: 'Sala Arte • A-02', level: 'Principiante', readTime: '2h lectura', recommended: true,
+        motivatingSummary: 'Ideas directas y motivadoras para coleccionar influencias, experimentar y desarrollar creatividad propia.',
+        whyRead: 'Lectura ágil y estimulante para quienes crean, diseñan o escriben.'
+      },
+      {
+        id: 'rec-art-3', regCode: 'ART-803-C', title: 'La Historia del Arte',
+        author: 'E. H. Gombrich', year: 1950, subject: 'Arte y Diseño', isbn: '978-0714832470',
+        shelf: 'Sala Arte • A-03', level: 'Todos los niveles', readTime: '16h lectura', recommended: false,
+        motivatingSummary: 'Recorrido claro por movimientos y obras artísticas para comprender formas, color y contexto.',
+        whyRead: 'Amplía la apreciación visual con explicaciones accesibles y ordenadas.'
+      }
+    ];
+
+    function getDateISO(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatDateES(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso + 'T00:00:00');
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function diffDaysFromToday(iso) {
+      const today = new Date(getDateISO(0) + 'T00:00:00');
+      const target = new Date(iso + 'T00:00:00');
+      return Math.round((target - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function nowTimestamp() {
+      const d = new Date();
+      return `${d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} • ${d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function generateCode(prefix) {
+      const num = Math.floor(1000 + Math.random() * 9000);
+      const suffix = Math.random().toString(36).substring(2, 4).toUpperCase();
+      return `${prefix}-${num}-${suffix}`;
+    }
+
+    function createInitialState() {
+      const b1Code = 'LIB-2041-AX';
+      const b2Code = 'PRG-3088-BT';
+      const b3Code = 'MAT-4119-CM';
+      const b4Code = 'FIS-5190-DK';
+
+      return {
+        settings: {
+          libraryName: 'Ateneo & Sala Viva',
+          theme: 'wood-parchment',
+          defaultLoanDays: 14,
+          maxLoansPerReader: 4,
+          dailyFineAmount: 15,
+          currencySymbol: '$',
+          readingGoalBooks: 12,
+          ambientMode: 'reading-chimney',
+          ambientVolume: 0.35,
+          soundEffects: true
+        },
+        books: [
+          {
+            id: 'bk-101', regCode: b1Code, title: 'Cien Años de Soledad',
+            author: 'Gabriel García Márquez', isbn: '978-0307474728',
+            category: 'Literatura y Ficción', shelf: 'Sala Letras • L-01',
+            totalCopies: 4, availableCopies: 2,
+            cover: generateBookCoverDataURL('Cien Años de Soledad', 'Gabriel García Márquez', 'Literatura y Ficción', b1Code),
+            notes: 'Edición de sala con prólogo crítico.'
+          },
+          {
+            id: 'bk-102', regCode: b2Code, title: 'Código Limpio: Artesanía de Software',
+            author: 'Robert C. Martin', isbn: '978-0132350884',
+            category: 'Programación', shelf: 'Sala Tech • P-01',
+            totalCopies: 3, availableCopies: 2,
+            cover: generateBookCoverDataURL('Código Limpio', 'Robert C. Martin', 'Programación', b2Code),
+            notes: 'Guía práctica de arquitectura y buenas prácticas.'
+          },
+          {
+            id: 'bk-103', regCode: b3Code, title: 'Cómo Plantear y Resolver Problemas',
+            author: 'George Pólya', isbn: '978-0691119670',
+            category: 'Matemáticas', shelf: 'Sala Ciencias • M-01',
+            totalCopies: 3, availableCopies: 3,
+            cover: generateBookCoverDataURL('Resolver Problemas', 'George Pólya', 'Matemáticas', b3Code),
+            notes: 'Método clásico para razonamiento matemático.'
+          },
+          {
+            id: 'bk-104', regCode: b4Code, title: 'Siete Breves Lecciones de Física',
+            author: 'Carlo Rovelli', isbn: '978-0399184413',
+            category: 'Física', shelf: 'Sala Ciencias • F-01',
+            totalCopies: 2, availableCopies: 1,
+            cover: generateBookCoverDataURL('Lecciones de Física', 'Carlo Rovelli', 'Física', b4Code),
+            notes: 'Introducción ágil a la física contemporánea.'
+          }
+        ],
+        readers: [
+          {
+            id: 'rd-201', cardCode: 'CRD-8841-MN', name: 'Valeria Mendoza Ríos',
+            email: 'valeria.mendoza@ateneo.edu', phone: '55-4120-8831',
+            category: 'Estudiante', issuedDate: getDateISO(-60), validUntil: getDateISO(305),
+            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80'
+          },
+          {
+            id: 'rd-202', cardCode: 'CRD-5520-JL', name: 'Carlos Eduardo Fuentes',
+            email: 'c.fuentes@ateneo.edu', phone: '55-3918-4402',
+            category: 'Docente', issuedDate: getDateISO(-120), validUntil: getDateISO(245),
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80'
+          },
+          {
+            id: 'rd-203', cardCode: 'CRD-7392-SP', name: 'Sofía Paredes Navarro',
+            email: 'sofia.paredes@lectores.org', phone: '55-6021-9914',
+            category: 'Público General', issuedDate: getDateISO(-25), validUntil: getDateISO(340),
+            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300&q=80'
+          }
+        ],
+        loans: [
+          {
+            id: 'ln-301', folio: 'PRT-9012-A', bookId: 'bk-101', readerId: 'rd-201',
+            loanDate: getDateISO(-19), dueDate: getDateISO(-5), status: 'active', renewals: 0, remindersSent: 1
+          },
+          {
+            id: 'ln-302', folio: 'PRT-9018-B', bookId: 'bk-101', readerId: 'rd-202',
+            loanDate: getDateISO(-12), dueDate: getDateISO(2), status: 'active', renewals: 0, remindersSent: 0
+          },
+          {
+            id: 'ln-303', folio: 'PRT-9025-C', bookId: 'bk-104', readerId: 'rd-203',
+            loanDate: getDateISO(-4), dueDate: getDateISO(10), status: 'active', renewals: 0, remindersSent: 0
+          }
+        ],
+        auditLogs: [
+          {
+            id: 'aud-1', code: b1Code, type: 'ALTA_LIBRO',
+            title: 'Registro en catálogo: Cien Años de Soledad',
+            detail: '4 ejemplares asignados a Sala Letras • L-01', timestamp: nowTimestamp()
+          },
+          {
+            id: 'aud-2', code: 'CRD-8841-MN', type: 'CREDENCIAL',
+            title: 'Credencial emitida para Valeria Mendoza Ríos',
+            detail: 'Categoría: Estudiante • Vigencia 1 año', timestamp: nowTimestamp()
+          },
+          {
+            id: 'aud-3', code: 'PRT-9012-A', type: 'PRESTAMO',
+            title: 'Préstamo registrado: Cien Años de Soledad → Valeria Mendoza Ríos',
+            detail: `Límite devolución: ${formatDateES(getDateISO(-5))} (Vencido)`, timestamp: nowTimestamp()
+          }
+        ]
+      };
+    }
+
+    function loadLibraryState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          const init = createInitialState();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(init));
+          return init;
+        }
+        const parsed = JSON.parse(raw);
+        const def = createInitialState();
+        return {
+          settings: { ...def.settings, ...(parsed.settings || {}) },
+          books: Array.isArray(parsed.books) ? parsed.books : def.books,
+          readers: Array.isArray(parsed.readers) ? parsed.readers : def.readers,
+          loans: Array.isArray(parsed.loans) ? parsed.loans : def.loans,
+          auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : def.auditLogs
+        };
+      } catch (e) {
+        return createInitialState();
+      }
+    }
+
+    let libState = loadLibraryState();
+    let currentRoute = 'inicio';
+
+    // Estados de filtros y vistas
+    let catalogSearch = '';
+    let catalogCategory = 'all';
+    let catalogAvailOnly = false;
+    let recSubjectFilter = 'all';
+    let subjectSelected = 'all';
+    let subjectSearch = '';
+    let selectedCredentialReaderId = libState.readers[0]?.id || '';
+    let credentialSidePreview = 'both'; // 'both' | 'front' | 'back'
+    let codeFilterType = 'all';
+    let codeSearchQuery = '';
+    let tempBookCoverData = '';
+    let tempReaderAvatarData = '';
+
+    function saveLibraryState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(libState));
+      } catch (e) {
+        showToast('Almacenamiento local lleno. Usa URLs en lugar de imágenes muy pesadas.', 'warning');
+      }
+      updateSidebarSummary();
+    }
+
+    function addAuditLog(type, code, title, detail = '') {
+      libState.auditLogs.unshift({
+        id: 'aud-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        code: code || generateCode('REG'),
+        type,
+        title,
+        detail,
+        timestamp: nowTimestamp()
+      });
+      if (libState.auditLogs.length > 250) {
+        libState.auditLogs.length = 250;
+      }
+    }
+
+    /* ========================================================================
+       2. SONIDOS AMBIENTALES PARA LECTURA Y BIBLIOTECA (WEB AUDIO API)
+       ======================================================================== */
+    const AMBIENT_NAMES = {
+      'reading-chimney': 'Sala de Lectura y Chimenea',
+      'rain-window': 'Lluvia en Ventana de Biblioteca',
+      'quiet-pages': 'Páginas y Tarde Tranquila',
+      'mute': 'Silencio'
+    };
+
+    const AudioEngine = {
+      ctx: null,
+      master: null,
+      playing: false,
+      mode: 'mute',
+      nodes: [],
+      timers: []
+    };
+
+    function ensureAudioCtx() {
+      if (!AudioEngine.ctx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        AudioEngine.ctx = new Ctx();
+      }
+      if (AudioEngine.ctx.state === 'suspended') {
+        AudioEngine.ctx.resume();
+      }
+      return AudioEngine.ctx;
+    }
+
+    function playUiClick(freq = 560) {
+      if (!libState.settings.soundEffects) return;
+      try {
+        const ctx = ensureAudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.2, now + 0.08);
+        gain.gain.setValueAtTime(0.045, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      } catch (e) {}
+    }
+
+    function playPageTurnSound() {
+      if (!libState.settings.soundEffects) return;
+      try {
+        const ctx = ensureAudioCtx();
+        const len = Math.floor(ctx.sampleRate * 0.15);
+        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.sin((i / len) * Math.PI) * 0.35;
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1350;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.16;
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start();
+      } catch (e) {}
+    }
+
+    function makeNoiseBuffer(ctx, modeType) {
+      const length = ctx.sampleRate * 4;
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const out = buffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < length; i++) {
+        const white = Math.random() * 2 - 1;
+        if (modeType === 'rain-window') {
+          b0 = (b0 + 0.022 * white) / 1.022;
+          out[i] = b0 * 0.45;
+        } else {
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          out[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.032;
+          b6 = white * 0.115926;
+        }
+      }
+      return buffer;
+    }
+
+    function stopAmbientGraph() {
+      AudioEngine.timers.forEach(id => clearInterval(id));
+      AudioEngine.timers = [];
+      AudioEngine.nodes.forEach(n => {
+        try {
+          if (n.stop) n.stop();
+          if (n.disconnect) n.disconnect();
+        } catch (e) {}
+      });
+      AudioEngine.nodes = [];
+    }
+
+    function startLibraryAmbient(mode) {
+      stopAmbientGraph();
+      if (!mode || mode === 'mute') {
+        AudioEngine.playing = false;
+        AudioEngine.mode = 'mute';
+        updateAmbientBadges();
+        return;
+      }
+      try {
+        const ctx = ensureAudioCtx();
+        if (!AudioEngine.master) {
+          AudioEngine.master = ctx.createGain();
+          AudioEngine.master.connect(ctx.destination);
+        }
+        const vol = typeof libState.settings.ambientVolume === 'number' ? libState.settings.ambientVolume : 0.35;
+        AudioEngine.master.gain.setTargetAtTime(vol, ctx.currentTime, 0.25);
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = makeNoiseBuffer(ctx, mode);
+        noise.loop = true;
+
+        const filter = ctx.createBiquadFilter();
+        if (mode === 'rain-window') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 880;
+          filter.Q.value = 0.65;
+        } else if (mode === 'quiet-pages') {
+          filter.type = 'lowpass';
+          filter.frequency.value = 340;
+        } else {
+          filter.type = 'lowpass';
+          filter.frequency.value = 240;
+        }
+
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+        lfo.type = 'sine';
+        lfo.frequency.value = mode === 'rain-window' ? 0.08 : 0.05;
+        lfoGain.gain.value = mode === 'rain-window' ? 110 : 45;
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        const gain = ctx.createGain();
+        gain.gain.value = mode === 'reading-chimney' ? 0.42 : 0.62;
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(AudioEngine.master);
+
+        noise.start();
+        lfo.start();
+        AudioEngine.nodes.push(noise, filter, lfo, lfoGain, gain);
+
+        if (mode === 'reading-chimney') {
+          const hearthTimer = setInterval(() => {
+            if (!AudioEngine.playing || Math.random() > 0.45) return;
+            const now = ctx.currentTime;
+            const crackle = ctx.createOscillator();
+            const cGain = ctx.createGain();
+            crackle.type = 'triangle';
+            crackle.frequency.setValueAtTime(140 + Math.random() * 190, now);
+            crackle.frequency.exponentialRampToValueAtTime(65, now + 0.05);
+            cGain.gain.setValueAtTime(0.035, now);
+            cGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+            crackle.connect(cGain);
+            cGain.connect(AudioEngine.master);
+            crackle.start(now);
+            crackle.stop(now + 0.06);
+          }, 950);
+          AudioEngine.timers.push(hearthTimer);
+        }
+
+        if (mode === 'quiet-pages') {
+          const notes = [261.63, 329.63, 392.00, 493.88, 523.25];
+          const padTimer = setInterval(() => {
+            if (!AudioEngine.playing || Math.random() > 0.55) return;
+            const now = ctx.currentTime;
+            const freq = notes[Math.floor(Math.random() * notes.length)];
+            const osc = ctx.createOscillator();
+            const pGain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+            pGain.gain.setValueAtTime(0.0001, now);
+            pGain.gain.linearRampToValueAtTime(0.03, now + 0.8);
+            pGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.4);
+            osc.connect(pGain);
+            pGain.connect(AudioEngine.master);
+            osc.start(now);
+            osc.stop(now + 3.5);
+          }, 3800);
+          AudioEngine.timers.push(padTimer);
+        }
+
+        AudioEngine.playing = true;
+        AudioEngine.mode = mode;
+        updateAmbientBadges();
+      } catch (e) {}
+    }
+
+    function setLibraryAmbientVolume(val) {
+      const v = Math.max(0, Math.min(1, parseFloat(val)));
+      libState.settings.ambientVolume = v;
+      saveLibraryState();
+      if (AudioEngine.master && AudioEngine.ctx) {
+        AudioEngine.master.gain.setTargetAtTime(v, AudioEngine.ctx.currentTime, 0.1);
+      }
+    }
+
+    function toggleLibraryAmbient() {
+      if (AudioEngine.playing) {
+        startLibraryAmbient('mute');
+        showToast('🔇 Sonido ambiental de lectura pausado.', 'info');
+      } else {
+        const chosen = libState.settings.ambientMode && libState.settings.ambientMode !== 'mute'
+          ? libState.settings.ambientMode
+          : 'reading-chimney';
+        libState.settings.ambientMode = chosen;
+        saveLibraryState();
+        startLibraryAmbient(chosen);
+        showToast(`🎧 Ambiente activo: ${AMBIENT_NAMES[chosen]}`, 'info');
+      }
+    }
+
+    function updateAmbientBadges() {
+      const active = AudioEngine.playing;
+      const label = active ? AMBIENT_NAMES[AudioEngine.mode] : 'Ambiente: Silencio';
+      const sIcon = document.getElementById('sidebar-audio-icon');
+      const sLabel = document.getElementById('sidebar-audio-label');
+      const sSub = document.getElementById('sidebar-audio-sub');
+      const sWaves = document.getElementById('sidebar-audio-waves');
+      if (sIcon && sLabel && sSub && sWaves) {
+        sIcon.className = active ? 'ph-fill ph-speaker-high text-lg text-amber-600' : 'ph-fill ph-speaker-slash text-lg';
+        sLabel.textContent = label;
+        sSub.textContent = active ? 'En reproducción • Toca para pausar' : 'Toca para activar';
+        sWaves.classList.toggle('hidden', !active);
+        sWaves.classList.toggle('flex', active);
+      }
+      const mIcon = document.getElementById('mobile-audio-icon');
+      const mDot = document.getElementById('mobile-audio-dot');
+      if (mIcon && mDot) {
+        mIcon.className = active ? 'ph-fill ph-speaker-high text-lg text-amber-600' : 'ph-fill ph-speaker-slash text-lg';
+        mDot.classList.toggle('hidden', !active);
+      }
+    }
+
+    /* ========================================================================
+       3. PANTALLA DE CARGA DE 10 SEGUNDOS (SIN TRABAS NI ENCOGIMIENTOS)
+       ======================================================================== */
+    let splashRafId = null;
+    let splashDismissed = false;
+
+    function dismissSplashScreen() {
+      if (splashDismissed) return;
+      splashDismissed = true;
+      if (splashRafId !== null) {
+        cancelAnimationFrame(splashRafId);
+        splashRafId = null;
+      }
+      const splash = document.getElementById('splash-screen');
+      if (!splash) return;
+      splash.classList.add('splash-hiding');
+      setTimeout(() => {
+        splash.style.display = 'none';
+      }, 650);
+    }
+
+    function activateAmbientFromSplash() {
+      const mode = libState.settings.ambientMode && libState.settings.ambientMode !== 'mute'
+        ? libState.settings.ambientMode
+        : 'reading-chimney';
+      libState.settings.ambientMode = mode;
+      saveLibraryState();
+      startLibraryAmbient(mode);
+      playUiClick(660);
+      const txt = document.getElementById('splash-sound-btn-text');
+      if (txt) txt.textContent = `Sonido activo: ${AMBIENT_NAMES[mode]} ✓`;
+    }
+
+    function startSplashTimer10s() {
+      const DURATION_MS = 10000;
+      const startPerf = performance.now();
+      const bar = document.getElementById('splash-progress-bar');
+      const pct = document.getElementById('splash-percent');
+      const msg = document.getElementById('splash-status-msg');
+      const timerLbl = document.getElementById('splash-timer-label');
+
+      const phases = [
+        { at: 0, text: 'Encendiendo la lámpara de lectura...' },
+        { at: 2200, text: 'Organizando estantes, materias y códigos de registro...' },
+        { at: 4800, text: 'Preparando recomendaciones y resúmenes que inspiran...' },
+        { at: 7400, text: 'Verificando préstamos, devoluciones y credenciales...' },
+        { at: 9100, text: '¡Tu sala de lectura está lista!' }
+      ];
+      let lastPhaseIdx = -1;
+
+      function step(now) {
+        if (splashDismissed) return;
+        const elapsed = Math.max(0, now - startPerf);
+        const clamped = Math.min(DURATION_MS, elapsed);
+        const ratio = clamped / DURATION_MS;
+
+        if (bar) bar.style.width = `${(ratio * 100).toFixed(2)}%`;
+        if (pct) pct.textContent = `${Math.round(ratio * 100)}%`;
+        if (timerLbl) timerLbl.textContent = `${(clamped / 1000).toFixed(1)}s / 10.0s`;
+
+        for (let i = phases.length - 1; i >= 0; i--) {
+          if (elapsed >= phases[i].at && lastPhaseIdx !== i) {
+            lastPhaseIdx = i;
+            if (msg) msg.textContent = phases[i].text;
+            break;
+          }
+        }
+
+        if (elapsed < DURATION_MS) {
+          splashRafId = requestAnimationFrame(step);
+        } else {
+          if (bar) bar.style.width = '100%';
+          if (pct) pct.textContent = '100%';
+          if (timerLbl) timerLbl.textContent = '10.0s / 10.0s';
+          dismissSplashScreen();
+        }
+      }
+
+      splashRafId = requestAnimationFrame(step);
+    }
+
+    /* ========================================================================
+       4. TOASTS, MODALES Y CÁLCULOS DE BIBLIOTECA
+       ======================================================================== */
+    function showToast(msg, variant = 'success') {
+      const container = document.getElementById('toast-container');
+      const div = document.createElement('div');
+      const styles = {
+        success: 'bg-emerald-800 text-white border-emerald-600',
+        warning: 'bg-amber-700 text-white border-amber-500',
+        danger: 'bg-rose-800 text-white border-rose-600',
+        info: 'bg-stone-800 text-white border-stone-600'
+      };
+      const icons = {
+        success: 'ph-check-circle',
+        warning: 'ph-warning',
+        danger: 'ph-x-circle',
+        info: 'ph-book-open'
+      };
+      div.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs sm:text-sm font-medium animate-view ${styles[variant] || styles.success}`;
+      div.innerHTML = `<i class="ph-fill ${icons[variant] || icons.success} text-xl shrink-0"></i><span>${msg}</span>`;
+      container.appendChild(div);
+      setTimeout(() => {
+        div.style.opacity = '0';
+        div.style.transform = 'translateY(-8px)';
+        div.style.transition = 'all 0.25s ease';
+        setTimeout(() => div.remove(), 260);
+      }, 3200);
+    }
+
+    function openModal(html) {
+      const bd = document.getElementById('modal-backdrop');
+      const ct = document.getElementById('modal-content');
+      ct.innerHTML = html;
+      bd.classList.remove('hidden');
+      bd.classList.add('flex');
+    }
+
+    function closeModal() {
+      const bd = document.getElementById('modal-backdrop');
+      bd.classList.add('hidden');
+      bd.classList.remove('flex');
+    }
+
+    document.getElementById('modal-backdrop').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-backdrop') closeModal();
+    });
+
+    function evaluateLoan(loan) {
+      const diff = diffDaysFromToday(loan.dueDate);
+      const rate = Number(libState.settings.dailyFineAmount) || 0;
+      const sym = libState.settings.currencySymbol || '$';
+
+      if (diff < 0) {
+        const overdueDays = Math.abs(diff);
+        const fine = overdueDays * rate;
+        return {
+          code: 'overdue',
+          label: `Vencido (${overdueDays}d)`,
+          overdueDays,
+          fine,
+          fineFormatted: `${sym}${fine.toFixed(2)}`,
+          badgeClass: 'bg-rose-100 text-rose-800 border border-rose-200'
+        };
+      }
+      if (diff <= 2) {
+        return {
+          code: 'due-soon',
+          label: diff === 0 ? 'Vence hoy' : `Por vencer (${diff}d)`,
+          overdueDays: 0,
+          fine: 0,
+          fineFormatted: `${sym}0.00`,
+          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200'
+        };
+      }
+      return {
+        code: 'on-time',
+        label: `Al día (${diff}d restantes)`,
+        overdueDays: 0,
+        fine: 0,
+        fineFormatted: `${sym}0.00`,
+        badgeClass: 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+      };
+    }
+
+    function getLibraryMetrics() {
+      const titlesCount = libState.books.length;
+      let totalCopies = 0;
+      let availableCopies = 0;
+      libState.books.forEach(b => {
+        totalCopies += Number(b.totalCopies) || 0;
+        availableCopies += Number(b.availableCopies) || 0;
+      });
+
+      const activeLoans = libState.loans.filter(l => l.status === 'active');
+      let overdueCount = 0;
+      let dueSoonCount = 0;
+      let totalEstimatedFines = 0;
+
+      activeLoans.forEach(l => {
+        const ev = evaluateLoan(l);
+        if (ev.code === 'overdue') {
+          overdueCount++;
+          totalEstimatedFines += ev.fine;
+        } else if (ev.code === 'due-soon') {
+          dueSoonCount++;
+        }
+      });
+
+      return {
+        titlesCount,
+        totalCopies,
+        availableCopies,
+        activeLoansCount: activeLoans.length,
+        overdueCount,
+        dueSoonCount,
+        totalEstimatedFines
+      };
+    }
+
+    function updateSidebarSummary() {
+      const m = getLibraryMetrics();
+      const badge = document.getElementById('sidebar-overdue-badge');
+      const booksSum = document.getElementById('sidebar-books-summary');
+      const loansSum = document.getElementById('sidebar-loans-summary');
+      if (badge) {
+        badge.textContent = `${m.overdueCount} vencidos`;
+        badge.className = `text-[11px] font-bold px-2 py-0.5 rounded-full ${m.overdueCount > 0 ? 'bg-rose-100 text-rose-800' : 'badge-soft'}`;
+      }
+      if (booksSum) booksSum.textContent = `${m.titlesCount} títulos • ${m.availableCopies}/${m.totalCopies} disp.`;
+      if (loansSum) loansSum.textContent = `${m.activeLoansCount} préstamos activos`;
+    }
+
+    const NAV_SECTIONS = [
+      { id: 'inicio', label: 'Inicio', short: 'Inicio', icon: 'ph-house' },
+      { id: 'catalogo', label: 'Catálogo', short: 'Catálogo', icon: 'ph-books' },
+      { id: 'prestamos', label: 'Préstamos', short: 'Préstamos', icon: 'ph-arrows-left-right' },
+      { id: 'recomendaciones', label: 'Recomendaciones', short: 'Recom.', icon: 'ph-sparkle' },
+      { id: 'materias', label: 'Por materia', short: 'Materias', icon: 'ph-stack' },
+      { id: 'credencial', label: 'Credencial', short: 'Credencial', icon: 'ph-identification-card' },
+      { id: 'codigos', label: 'Códigos', short: 'Códigos', icon: 'ph-barcode' },
+      { id: 'alertas', label: 'Alertas', short: 'Alertas', icon: 'ph-bell-ringing' },
+      { id: 'ajustes', label: 'Ajustes', short: 'Ajustes', icon: 'ph-gear' }
+    ];
+
+    function applyLibraryTheme(theme) {
+      document.body.setAttribute('data-theme', theme || 'wood-parchment');
+    }
+
+    function renderNavMenus() {
+      const dNav = document.getElementById('desktop-nav');
+      const mNav = document.getElementById('mobile-nav');
+      const metrics = getLibraryMetrics();
+      const alertCount = metrics.overdueCount + metrics.dueSoonCount;
+
+      dNav.innerHTML = NAV_SECTIONS.map(sec => {
+        const active = currentRoute === sec.id;
+        const badge = sec.id === 'alertas' && alertCount > 0
+          ? `<span class="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'}">${alertCount}</span>`
+          : '';
+        return `
+          <button type="button" onclick="navigateTo('${sec.id}')"
+            class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
+              active ? 'btn-primary shadow-sm' : 'hover:bg-black/5'
+            }"
+            style="${!active ? 'color: var(--text-secondary);' : ''}">
+            <i class="${active ? 'ph-fill' : 'ph-bold'} ${sec.icon} text-lg"></i>
+            <span class="truncate">${sec.label}</span>
+            ${badge}
+          </button>
+        `;
+      }).join('');
+
+      mNav.innerHTML = NAV_SECTIONS.map(sec => {
+        const active = currentRoute === sec.id;
+        return `
+          <button type="button" onclick="navigateTo('${sec.id}')"
+            class="flex flex-col items-center justify-center min-w-[52px] py-1 px-1.5 rounded-xl transition-all relative ${
+              active ? 'badge-soft font-bold' : ''
+            }"
+            style="${!active ? 'color: var(--text-muted);' : ''}">
+            <i class="${active ? 'ph-fill' : 'ph-bold'} ${sec.icon} text-xl"></i>
+            <span class="text-[10px] mt-0.5 leading-none whitespace-nowrap">${sec.short}</span>
+            ${sec.id === 'alertas' && alertCount > 0 ? `<span class="w-2 h-2 rounded-full bg-rose-500 absolute top-1 right-2"></span>` : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function navigateTo(route) {
+      currentRoute = route;
+      playPageTurnSound();
+      renderNavMenus();
+      renderView();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ========================================================================
+       5. ACCIONES DE PRÉSTAMOS, DEVOLUCIONES Y RENOVACIONES
+       ======================================================================== */
+    function createLoan(bookId, readerId, dueDate) {
+      const book = libState.books.find(b => b.id === bookId);
+      const reader = libState.readers.find(r => r.id === readerId);
+      if (!book || !reader) {
+        showToast('Selecciona un libro válido y un lector registrado.', 'warning');
+        return false;
+      }
+      if ((Number(book.availableCopies) || 0) <= 0) {
+        showToast(`No hay ejemplares disponibles de "${book.title}".`, 'danger');
+        return false;
+      }
+
+      const activeForReader = libState.loans.filter(l => l.status === 'active' && l.readerId === reader.id).length;
+      const maxLimit = Number(libState.settings.maxLoansPerReader) || 4;
+      if (activeForReader >= maxLimit) {
+        showToast(`${reader.name} alcanzó el límite de ${maxLimit} préstamos activos.`, 'warning');
+        return false;
+      }
+
+      const finalDueDate = dueDate || getDateISO(Number(libState.settings.defaultLoanDays) || 14);
+      const folio = generateCode('PRT');
+
+      book.availableCopies = Number(book.availableCopies) - 1;
+      libState.loans.unshift({
+        id: 'ln-' + Date.now(),
+        folio,
+        bookId: book.id,
+        readerId: reader.id,
+        loanDate: getDateISO(0),
+        dueDate: finalDueDate,
+        status: 'active',
+        renewals: 0,
+        remindersSent: 0
+      });
+
+      addAuditLog(
+        'PRESTAMO',
+        folio,
+        `Préstamo: "${book.title}" → ${reader.name} (${reader.cardCode})`,
+        `Código libro: ${book.regCode} • Devolución límite: ${formatDateES(finalDueDate)}`
+      );
+
+      saveLibraryState();
+      renderNavMenus();
+      playUiClick(700);
+      showToast(`📖 Préstamo ${folio} registrado. Devolución: ${formatDateES(finalDueDate)}`);
+      return true;
+    }
+
+    function returnLoan(loanId) {
+      const loan = libState.loans.find(l => l.id === loanId);
+      if (!loan || loan.status !== 'active') return;
+      const book = libState.books.find(b => b.id === loan.bookId);
+      const reader = libState.readers.find(r => r.id === loan.readerId);
+      const ev = evaluateLoan(loan);
+
+      loan.status = 'returned';
+      loan.returnedDate = getDateISO(0);
+      if (book) {
+        book.availableCopies = Math.min(Number(book.totalCopies) || 1, (Number(book.availableCopies) || 0) + 1);
+      }
+
+      addAuditLog(
+        'DEVOLUCION',
+        loan.folio,
+        `Devolución recibida: "${book ? book.title : 'Libro'}" (${reader ? reader.name : 'Lector'})`,
+        ev.overdueDays > 0
+          ? `Con ${ev.overdueDays}d de retraso • Multa estimada: ${ev.fineFormatted}`
+          : 'Devuelto a tiempo • Ejemplar disponible'
+      );
+
+      saveLibraryState();
+      renderNavMenus();
+      playUiClick(520);
+      showToast(`✅ Devolución registrada (${loan.folio}).`);
+      renderView();
+    }
+
+    function renewLoan(loanId) {
+      const loan = libState.loans.find(l => l.id === loanId);
+      if (!loan || loan.status !== 'active') return;
+      const extraDays = Number(libState.settings.defaultLoanDays) || 14;
+      const base = new Date((diffDaysFromToday(loan.dueDate) < 0 ? getDateISO(0) : loan.dueDate) + 'T00:00:00');
+      base.setDate(base.getDate() + extraDays);
+      loan.dueDate = base.toISOString().split('T')[0];
+      loan.renewals = (Number(loan.renewals) || 0) + 1;
+
+      const book = libState.books.find(b => b.id === loan.bookId);
+      const reader = libState.readers.find(r => r.id === loan.readerId);
+
+      addAuditLog(
+        'RENOVACION',
+        loan.folio,
+        `Renovación #${loan.renewals}: "${book ? book.title : 'Libro'}" → ${reader ? reader.name : 'Lector'}`,
+        `Nueva fecha de devolución: ${formatDateES(loan.dueDate)}`
+      );
+
+      saveLibraryState();
+      renderNavMenus();
+      playUiClick(640);
+      showToast(`🔄 Préstamo renovado hasta ${formatDateES(loan.dueDate)}.`);
+      renderView();
+    }
+
+    function openBookDetailModal(bookId) {
+      const b = libState.books.find(bk => bk.id === bookId);
+      if (!b) return;
+      openModal(`
+        <div>
+          <div class="flex justify-between items-start gap-4 mb-4">
+            <div>
+              <span class="font-mono text-xs font-bold px-2.5 py-1 rounded badge-soft">${b.regCode}</span>
+              <h3 class="font-serif font-extrabold text-2xl mt-2">${b.title}</h3>
+              <p class="text-sm" style="color: var(--text-secondary);">${b.author}</p>
+            </div>
+            <button type="button" onclick="closeModal()" class="w-9 h-9 rounded-xl surface-alt flex items-center justify-center">
+              <i class="ph-bold ph-x text-lg"></i>
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-5 mb-5">
+            <img src="${b.cover || DEFAULT_COVER_SVG}" onerror="this.src='${DEFAULT_COVER_SVG}'" alt="${b.title}"
+              class="w-32 h-44 object-cover rounded-2xl shrink-0 border" style="border-color: var(--border-color);" />
+            <div class="flex-1 space-y-2 text-xs">
+              <p><strong>Materia:</strong> ${b.category}</p>
+              <p><strong>ISBN:</strong> <span class="font-mono">${b.isbn || '—'}</span></p>
+              <p><strong>Ubicación / Estante:</strong> <span class="font-mono">${b.shelf || 'General'}</span></p>
+              <p><strong>Disponibilidad:</strong> <strong class="${Number(b.availableCopies) > 0 ? 'text-emerald-700' : 'text-rose-600'}">${b.availableCopies} de ${b.totalCopies} disponibles</strong></p>
+              <p class="pt-1 leading-relaxed" style="color: var(--text-secondary);">${b.notes || 'Sin observaciones adicionales.'}</p>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2.5">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold surface-alt">Cerrar</button>
+            <button type="button" onclick="closeModal(); navigateTo('prestamos');" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold">Ir a Préstamos</button>
+          </div>
+        </div>
+      `);
+    }
+
+    /* ========================================================================
+       6. RENDERIZADO DE TODAS LAS SECCIONES
+       ======================================================================== */
+    function renderView() {
+      const container = document.getElementById('app-view');
+      container.classList.remove('animate-view');
+      void container.offsetWidth;
+      container.classList.add('animate-view');
+
+      switch (currentRoute) {
+        case 'inicio': container.innerHTML = renderInicioSection(); break;
+        case 'catalogo': container.innerHTML = renderCatalogoSection(); bindCatalogEvents(); break;
+        case 'prestamos': container.innerHTML = renderPrestamosSection(); bindLoanFormEvents(); break;
+        case 'recomendaciones': container.innerHTML = renderRecomendacionesSection(); break;
+        case 'materias': container.innerHTML = renderMateriasSection(); break;
+        case 'credencial': container.innerHTML = renderCredencialSection(); bindCredentialFormEvents(); break;
+        case 'codigos': container.innerHTML = renderCodigosSection(); break;
+        case 'alertas': container.innerHTML = renderAlertasSection(); break;
+        case 'ajustes': container.innerHTML = renderAjustesSection(); break;
+        default: container.innerHTML = renderInicioSection();
+      }
+    }
+
+    /* --- INICIO --- */
+    function renderInicioSection() {
+      const m = getLibraryMetrics();
+      const activeLoans = libState.loans.filter(l => l.status === 'active');
+      const urgentLoans = activeLoans.filter(l => evaluateLoan(l).code !== 'on-time');
+      const returnedCount = libState.loans.filter(l => l.status === 'returned').length;
+      const goal = Math.max(1, Number(libState.settings.readingGoalBooks) || 12);
+      const goalPct = Math.min(100, Math.round((returnedCount / goal) * 100));
+      const topRecs = RECOMMENDED_CATALOG.filter(r => r.recommended).slice(0, 3);
+
+      return `
+        <section class="hero-banner rounded-3xl p-6 sm:p-8 text-white shadow-lg mb-6 relative overflow-hidden">
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div class="min-w-0">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-full mb-3">
+                <i class="ph-fill ph-sparkle text-amber-300"></i> Sala de Lectura Viva
+              </span>
+              <h2 class="font-serif font-extrabold text-2xl sm:text-3xl tracking-tight">${libState.settings.libraryName}</h2>
+              <p class="text-white/90 text-sm sm:text-base mt-1.5 max-w-xl font-serif italic">
+                "Leer es abrir una ventana a otras vidas, ideas y horizontes en cualquier momento del día."
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2.5 shrink-0">
+              <button type="button" onclick="navigateTo('recomendaciones')" class="bg-amber-300 text-stone-950 hover:bg-amber-200 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-2xl shadow flex items-center gap-1.5">
+                <i class="ph-fill ph-sparkle"></i> Recomendaciones
+              </button>
+              <button type="button" onclick="navigateTo('materias')" class="bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-2xl flex items-center gap-1.5">
+                <i class="ph-bold ph-stack"></i> Por materia
+              </button>
+            </div>
+          </div>
+          <i class="ph-fill ph-books text-[170px] text-white/5 absolute -right-6 -bottom-10 pointer-events-none"></i>
+        </section>
+
+        <!-- Meta de lectura -->
+        <section class="surface-card spine-accent rounded-3xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="pl-2 flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <span class="text-xs font-bold uppercase tracking-wider truncate" style="color: var(--text-secondary);">
+                <i class="ph-fill ph-trophy text-amber-600 mr-1"></i> Meta de Lectura y Devoluciones
+              </span>
+              <span class="font-mono text-xs font-bold shrink-0">${returnedCount} / ${goal} (${goalPct}%)</span>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-black/10 overflow-hidden">
+              <div class="h-full rounded-full hero-banner transition-all duration-500" style="width: ${goalPct}%;"></div>
+            </div>
+          </div>
+          <button type="button" onclick="navigateTo('prestamos')" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold shrink-0">
+            Ver préstamos
+          </button>
+        </section>
+
+        <!-- 4 KPIs -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div class="surface-card spine-accent rounded-2xl p-4 sm:p-5">
+            <div class="w-10 h-10 rounded-xl badge-soft flex items-center justify-center mb-3">
+              <i class="ph-fill ph-books text-xl"></i>
+            </div>
+            <span class="text-xs font-medium block" style="color: var(--text-secondary);">Títulos en catálogo</span>
+            <strong class="font-mono font-bold text-2xl sm:text-3xl mt-0.5 block">${m.titlesCount}</strong>
+          </div>
+
+          <div class="surface-card spine-accent rounded-2xl p-4 sm:p-5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center mb-3">
+              <i class="ph-fill ph-check-square text-xl"></i>
+            </div>
+            <span class="text-xs font-medium block" style="color: var(--text-secondary);">Copias disponibles</span>
+            <strong class="font-mono font-bold text-2xl sm:text-3xl mt-0.5 block">${m.availableCopies}/${m.totalCopies}</strong>
+          </div>
+
+          <div class="surface-card spine-accent rounded-2xl p-4 sm:p-5">
+            <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center mb-3">
+              <i class="ph-fill ph-bookmark-simple text-xl"></i>
+            </div>
+            <span class="text-xs font-medium block" style="color: var(--text-secondary);">Préstamos activos</span>
+            <strong class="font-mono font-bold text-2xl sm:text-3xl mt-0.5 block">${m.activeLoansCount}</strong>
+          </div>
+
+          <div class="surface-card spine-accent rounded-2xl p-4 sm:p-5">
+            <div class="w-10 h-10 rounded-xl ${m.overdueCount > 0 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'} flex items-center justify-center mb-3">
+              <i class="ph-fill ph-warning-circle text-xl"></i>
+            </div>
+            <span class="text-xs font-medium block" style="color: var(--text-secondary);">Vencidos</span>
+            <strong class="font-mono font-bold text-2xl sm:text-3xl mt-0.5 block ${m.overdueCount > 0 ? 'text-rose-600' : ''}">${m.overdueCount}</strong>
+          </div>
+        </section>
+
+        <!-- Recomendaciones rápidas -->
+        <section class="mb-6">
+          <div class="flex items-center justify-between gap-2 mb-3.5">
+            <h3 class="font-serif font-bold text-xl flex items-center gap-2">
+              <i class="ph-fill ph-flame text-amber-600"></i> Recomendados para motivar la lectura
+            </h3>
+            <button type="button" onclick="navigateTo('recomendaciones')" class="text-xs font-bold hover:underline shrink-0" style="color: var(--accent-primary);">Ver los ${RECOMMENDED_CATALOG.length} libros →</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${topRecs.map(rec => renderRecommendedCard(rec, true)).join('')}
+          </div>
+        </section>
+
+        <!-- Préstamos por vencer o vencidos -->
+        <section class="surface-card rounded-3xl p-5 sm:p-6">
+          <div class="flex items-center justify-between gap-2 mb-4">
+            <h3 class="font-serif font-bold text-xl flex items-center gap-2">
+              <i class="ph-fill ph-bell-ringing text-amber-600"></i> Fechas de devolución próximas o vencidas
+            </h3>
+            <button type="button" onclick="navigateTo('alertas')" class="text-xs font-bold hover:underline shrink-0" style="color: var(--accent-primary);">Ver alertas →</button>
+          </div>
+          ${urgentLoans.length === 0 ? `
+            <div class="surface-alt rounded-2xl p-6 text-center text-sm font-medium" style="color: var(--text-secondary);">
+              No hay devoluciones vencidas ni próximas a vencer en las próximas 48 horas.
+            </div>
+          ` : `
+            <div class="flex flex-col gap-3">
+              ${urgentLoans.map(l => {
+                const bk = libState.books.find(b => b.id === l.bookId);
+                const rd = libState.readers.find(r => r.id === l.readerId);
+                const ev = evaluateLoan(l);
+                return `
+                  <div class="surface-alt rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-black/5">${l.folio}</span>
+                        <strong class="text-sm truncate">${bk ? bk.title : 'Libro'}</strong>
+                        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${ev.badgeClass}">${ev.label}</span>
+                      </div>
+                      <p class="text-xs mt-1" style="color: var(--text-secondary);">
+                        Lector: <strong>${rd ? rd.name : '—'}</strong> • Devolución: <strong>${formatDateES(l.dueDate)}</strong>
+                        ${ev.overdueDays > 0 ? `• Multa: <strong class="text-rose-600">${ev.fineFormatted}</strong>` : ''}
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button type="button" onclick="renewLoan('${l.id}')" class="surface-card px-3 py-2 rounded-xl text-xs font-bold">Renovar</button>
+                      <button type="button" onclick="returnLoan('${l.id}')" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-bold">Devolver</button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </section>
+      `;
+    }
+
+    /* --- CATÁLOGO --- */
+    function renderCatalogoSection() {
+      const subjects = ['all', ...Object.keys(SUBJECT_STYLES)];
+      const filtered = libState.books.filter(b => {
+        const q = catalogSearch.toLowerCase();
+        const matchText = !q ||
+          b.title.toLowerCase().includes(q) ||
+          b.author.toLowerCase().includes(q) ||
+          (b.isbn || '').toLowerCase().includes(q) ||
+          (b.regCode || '').toLowerCase().includes(q);
+        const matchCat = catalogCategory === 'all' || b.category === catalogCategory;
+        const matchAvail = !catalogAvailOnly || (Number(b.availableCopies) > 0);
+        return matchText && matchCat && matchAvail;
+      });
+
+      const suggestedCode = generateCode('LIB');
+
+      return `
+        <div class="mb-6">
+          <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Catálogo de Libros 📚</h2>
+          <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Registra nuevos libros con su código único, ubicación en estante y disponibilidad.</p>
+        </div>
+
+        <form id="add-book-form" class="surface-card spine-accent rounded-3xl p-5 sm:p-6 mb-7">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pl-2">
+            <h3 class="font-serif font-bold text-xl flex items-center gap-2">
+              <i class="ph-fill ph-book-bookmark" style="color: var(--accent-primary);"></i> Registrar nuevo libro
+            </h3>
+            <span class="font-mono text-xs px-3 py-1 rounded-full badge-soft">Código: ${suggestedCode}</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-4 pl-2">
+            <div class="lg:col-span-2">
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Título *</label>
+              <input id="bk-title" type="text" required placeholder="Ej. Rayuela" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Autor *</label>
+              <input id="bk-author" type="text" required placeholder="Ej. Julio Cortázar" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Código de registro *</label>
+              <input id="bk-regcode" type="text" value="${suggestedCode}" required class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Materia</label>
+              <select id="bk-category" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none">
+                ${Object.keys(SUBJECT_STYLES).map(s => `<option value="${s}">${s}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">ISBN</label>
+              <input id="bk-isbn" type="text" placeholder="978-..." class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Estante / Sala</label>
+              <input id="bk-shelf" type="text" placeholder="Ej. Sala Letras • L-04" class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Copias totales *</label>
+              <input id="bk-copies" type="number" min="1" max="200" value="2" required class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+            </div>
+          </div>
+
+          <div class="pl-2 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            <input id="bk-notes" type="text" placeholder="Notas, edición o comentario motivador (opcional)..." class="flex-1 px-3.5 py-2.5 rounded-xl text-xs surface-alt outline-none" />
+            <label class="cursor-pointer px-3.5 py-2.5 rounded-xl text-xs font-bold badge-soft inline-flex items-center justify-center gap-1.5 shrink-0">
+              <i class="ph-bold ph-image"></i> <span id="bk-cover-label">Portada personal</span>
+              <input id="bk-cover-file" type="file" accept="image/*" class="hidden" />
+            </label>
+            <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow shrink-0">
+              <i class="ph-bold ph-plus-circle"></i> Guardar libro
+            </button>
+          </div>
+        </form>
+
+        <!-- Búsqueda y Filtros -->
+        <div class="surface-card rounded-2xl p-4 mb-5 flex flex-col gap-3">
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+              <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2" style="color: var(--text-muted);"></i>
+              <input type="text" value="${catalogSearch}" oninput="catalogSearch = this.value; renderView();"
+                placeholder="Buscar por título, autor, ISBN o código..."
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+            </div>
+            <button type="button" onclick="catalogAvailOnly = !catalogAvailOnly; renderView();"
+              class="px-4 py-2.5 rounded-xl text-xs font-bold border whitespace-nowrap ${catalogAvailOnly ? 'bg-emerald-700 text-white border-emerald-700' : 'surface-alt'}">
+              Solo disponibles
+            </button>
+          </div>
+          <div class="flex gap-1.5 overflow-x-auto no-scrollbar">
+            ${subjects.map(sub => `
+              <button type="button" onclick="catalogCategory = '${sub}'; renderView();"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap ${catalogCategory === sub ? 'btn-primary' : 'surface-alt'}">
+                ${sub === 'all' ? 'Todas las materias' : sub}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${filtered.map(b => {
+            const avail = Number(b.availableCopies) || 0;
+            const total = Number(b.totalCopies) || 0;
+            const st = SUBJECT_STYLES[b.category] || SUBJECT_STYLES['Literatura y Ficción'];
+            return `
+              <article class="surface-card rounded-3xl p-4 flex gap-4 items-center">
+                <img src="${b.cover || DEFAULT_COVER_SVG}" onerror="this.src='${DEFAULT_COVER_SVG}'" alt="${b.title}"
+                  class="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-2xl shrink-0 cursor-pointer border"
+                  style="border-color: var(--border-color);" onclick="openBookDetailModal('${b.id}')" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                    <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded badge-soft">${b.regCode}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.badge}">${b.category}</span>
+                  </div>
+                  <h4 class="font-serif font-extrabold text-lg leading-tight truncate cursor-pointer hover:underline" onclick="openBookDetailModal('${b.id}')">${b.title}</h4>
+                  <p class="text-xs mt-0.5 truncate" style="color: var(--text-secondary);">${b.author}</p>
+                  <p class="font-mono text-[11px] mt-1 truncate" style="color: var(--text-muted);">${b.shelf || 'Estante General'} • ISBN: ${b.isbn || '—'}</p>
+
+                  <div class="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t" style="border-color: var(--border-color);">
+                    <span class="text-xs font-bold ${avail > 0 ? 'text-emerald-700' : 'text-rose-600'}">
+                      ${avail > 0 ? `● ${avail}/${total} disp.` : `● Agotado (0/${total})`}
+                    </span>
+                    <button type="button" onclick="openBookDetailModal('${b.id}')" class="text-xs font-bold underline" style="color: var(--accent-primary);">Ver ficha</button>
+                  </div>
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function bindCatalogEvents() {
+      const form = document.getElementById('add-book-form');
+      const fileInp = document.getElementById('bk-cover-file');
+      const lbl = document.getElementById('bk-cover-label');
+
+      if (fileInp) {
+        fileInp.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            tempBookCoverData = ev.target.result;
+            if (lbl) lbl.textContent = 'Portada lista ✓';
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const title = document.getElementById('bk-title').value.trim();
+          const author = document.getElementById('bk-author').value.trim();
+          const regCode = document.getElementById('bk-regcode').value.trim().toUpperCase() || generateCode('LIB');
+          const category = document.getElementById('bk-category').value;
+          const copies = Math.max(1, parseInt(document.getElementById('bk-copies').value, 10) || 1);
+          const cover = tempBookCoverData || generateBookCoverDataURL(title, author, category, regCode);
+
+          libState.books.unshift({
+            id: 'bk-' + Date.now(),
+            regCode,
+            title,
+            author,
+            isbn: document.getElementById('bk-isbn').value.trim(),
+            category,
+            shelf: document.getElementById('bk-shelf').value.trim() || 'Estante General',
+            totalCopies: copies,
+            availableCopies: copies,
+            cover,
+            notes: document.getElementById('bk-notes').value.trim()
+          });
+
+          addAuditLog('ALTA_LIBRO', regCode, `Nuevo libro registrado: "${title}"`, `Autor: ${author} • ${copies} copia(s)`);
+          tempBookCoverData = '';
+          saveLibraryState();
+          renderNavMenus();
+          playUiClick(680);
+          showToast(`📚 "${title}" agregado al catálogo (${regCode}).`);
+          renderView();
+        });
+      }
+    }
+
+    /* --- PRÉSTAMOS (FECHAS DE PRÉSTAMO Y DEVOLUCIÓN) --- */
+    function renderPrestamosSection() {
+      const availableBooks = libState.books.filter(b => (Number(b.availableCopies) || 0) > 0);
+      const defaultDays = Number(libState.settings.defaultLoanDays) || 14;
+      const defaultDue = getDateISO(defaultDays);
+      const activeLoans = libState.loans.filter(l => l.status === 'active');
+      const returnedLoans = libState.loans.filter(l => l.status === 'returned').slice(0, 8);
+
+      return `
+        <div class="mb-6">
+          <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Préstamos y Devoluciones 🔄</h2>
+          <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Registra fecha de préstamo y fecha límite de devolución, renueva o marca devoluciones.</p>
+        </div>
+
+        <form id="new-loan-form" class="surface-card spine-accent rounded-3xl p-5 sm:p-6 mb-7">
+          <h3 class="font-serif font-bold text-xl mb-4 pl-2">Registrar nuevo préstamo</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end pl-2">
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Lector / Credencial *</label>
+              <select id="loan-reader" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none">
+                ${libState.readers.map(r => `<option value="${r.id}">${r.name} (${r.cardCode})</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Libro disponible *</label>
+              <select id="loan-book" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none">
+                ${availableBooks.length === 0
+                  ? `<option value="">Sin ejemplares disponibles</option>`
+                  : availableBooks.map(b => `<option value="${b.id}">${b.title} [${b.availableCopies} disp.] (${b.regCode})</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Fecha de devolución *</label>
+              <div class="flex gap-1.5">
+                <input id="loan-due-date" type="date" value="${defaultDue}" min="${getDateISO(0)}" required class="flex-1 px-3 py-2.5 rounded-xl text-xs font-mono surface-alt outline-none" />
+                <button type="button" onclick="document.getElementById('loan-due-date').value = getDateISO(${defaultDays})"
+                  class="px-2.5 py-2 rounded-xl text-[11px] font-bold badge-soft shrink-0">+${defaultDays}d</button>
+              </div>
+            </div>
+            <button type="submit" ${availableBooks.length === 0 ? 'disabled' : ''}
+              class="btn-primary py-2.5 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 h-[42px] disabled:opacity-40">
+              <i class="ph-bold ph-check"></i> Registrar préstamo
+            </button>
+          </div>
+        </form>
+
+        <section class="mb-8">
+          <h3 class="font-serif font-bold text-xl mb-3.5">Préstamos activos (${activeLoans.length})</h3>
+          ${activeLoans.length === 0 ? `
+            <div class="surface-card rounded-3xl p-8 text-center text-sm" style="color: var(--text-secondary);">No hay préstamos activos.</div>
+          ` : `
+            <div class="flex flex-col gap-3">
+              ${activeLoans.map(l => {
+                const bk = libState.books.find(b => b.id === l.bookId);
+                const rd = libState.readers.find(r => r.id === l.readerId);
+                const ev = evaluateLoan(l);
+                return `
+                  <div class="surface-card rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="space-y-1 min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-mono text-xs font-bold px-2.5 py-0.5 rounded badge-soft">${l.folio}</span>
+                        <strong class="font-serif font-extrabold text-lg">${bk ? bk.title : 'Libro'}</strong>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${ev.badgeClass}">${ev.label}</span>
+                      </div>
+                      <p class="text-xs" style="color: var(--text-secondary);">
+                        Lector: <strong>${rd ? rd.name : '—'}</strong> <span class="font-mono">(${rd ? rd.cardCode : ''})</span> • Código: <span class="font-mono">${bk ? bk.regCode : ''}</span>
+                      </p>
+                      <div class="flex flex-wrap gap-4 text-xs font-mono pt-0.5">
+                        <span>Préstamo: <strong>${formatDateES(l.loanDate)}</strong></span>
+                        <span>Devolución: <strong>${formatDateES(l.dueDate)}</strong></span>
+                        ${ev.overdueDays > 0 ? `<span class="text-rose-600 font-bold">Multa: ${ev.fineFormatted}</span>` : ''}
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                      <button type="button" onclick="renewLoan('${l.id}')" class="surface-alt px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1">
+                        <i class="ph-bold ph-arrow-clockwise"></i> Renovar
+                      </button>
+                      <button type="button" onclick="returnLoan('${l.id}')" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1">
+                        <i class="ph-bold ph-arrow-u-up-left"></i> Devolver
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </section>
+
+        ${returnedLoans.length > 0 ? `
+          <section>
+            <h3 class="font-serif font-bold text-lg mb-3" style="color: var(--text-secondary);">Historial de devoluciones</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${returnedLoans.map(l => {
+                const bk = libState.books.find(b => b.id === l.bookId);
+                const rd = libState.readers.find(r => r.id === l.readerId);
+                return `
+                  <div class="surface-alt rounded-2xl p-3.5 flex items-center justify-between gap-3 opacity-85">
+                    <div class="min-w-0">
+                      <span class="font-mono text-[11px] font-bold">${l.folio}</span> • <strong class="text-xs">${bk ? bk.title : 'Libro'}</strong>
+                      <p class="text-[11px] truncate" style="color: var(--text-secondary);">${rd ? rd.name : 'Lector'} • Devuelto: ${formatDateES(l.returnedDate)}</p>
+                    </div>
+                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 shrink-0">Devuelto</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </section>
+        ` : ''}
+      `;
+    }
+
+    function bindLoanFormEvents() {
+      const form = document.getElementById('new-loan-form');
+      if (!form) return;
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const readerId = document.getElementById('loan-reader').value;
+        const bookId = document.getElementById('loan-book').value;
+        const dueDate = document.getElementById('loan-due-date').value;
+        if (createLoan(bookId, readerId, dueDate)) {
+          renderView();
+        }
+      });
+    }
+
+    /* --- RECOMENDACIONES Y LIBROS POR MATERIA --- */
+    function addRecommendedToLibrary(recId, goToLoans = false) {
+      const rec = RECOMMENDED_CATALOG.find(r => r.id === recId);
+      if (!rec) return;
+
+      let book = libState.books.find(b => b.title.toLowerCase() === rec.title.toLowerCase());
+      if (!book) {
+        book = {
+          id: 'bk-' + Date.now(),
+          regCode: rec.regCode,
+          title: rec.title,
+          author: rec.author,
+          isbn: rec.isbn,
+          category: rec.subject,
+          shelf: rec.shelf,
+          totalCopies: 3,
+          availableCopies: 3,
+          cover: generateBookCoverDataURL(rec.title, rec.author, rec.subject, rec.regCode),
+          notes: rec.motivatingSummary
+        };
+        libState.books.unshift(book);
+        addAuditLog('ALTA_LIBRO', book.regCode, `Añadido desde Recomendaciones: "${book.title}"`, `Materia: ${book.category}`);
+      }
+
+      if (goToLoans && libState.readers.length > 0 && book.availableCopies > 0) {
+        createLoan(book.id, libState.readers[0].id, getDateISO(Number(libState.settings.defaultLoanDays) || 14));
+        navigateTo('prestamos');
+        return;
+      }
+
+      saveLibraryState();
+      renderNavMenus();
+      playUiClick(660);
+      showToast(`📚 "${rec.title}" añadido al catálogo (${book.regCode}).`);
+      renderView();
+    }
+
+    function renderRecommendedCard(rec, compact = false) {
+      const st = SUBJECT_STYLES[rec.subject] || SUBJECT_STYLES['Literatura y Ficción'];
+      const cover = generateBookCoverDataURL(rec.title, rec.author, rec.subject, rec.regCode);
+      return `
+        <article class="surface-card spine-accent rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5">
+          <div>
+            <div class="flex items-start gap-3.5 mb-3 pl-1">
+              <img src="${cover}" alt="${rec.title}" class="w-16 h-24 object-cover rounded-xl shrink-0 border" style="border-color: var(--border-color);" />
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.badge}">${rec.subject}</span>
+                  <span class="font-mono text-[10px]" style="color: var(--text-muted);">${rec.year} • ${rec.readTime}</span>
+                </div>
+                <h4 class="font-serif font-extrabold text-base sm:text-lg leading-snug">${rec.title}</h4>
+                <p class="text-xs font-medium mt-0.5" style="color: var(--text-secondary);">${rec.author}</p>
+              </div>
+            </div>
+
+            <p class="text-xs leading-relaxed pl-1">${rec.motivatingSummary}</p>
+            ${!compact ? `
+              <div class="mt-3 ml-1 p-3 rounded-2xl surface-alt text-xs" style="color: var(--text-secondary);">
+                <strong class="block text-[10px] uppercase tracking-wider mb-0.5" style="color: var(--accent-primary);">Por qué animarte a leerlo:</strong>
+                ${rec.whyRead}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-2.5 pl-1 border-t" style="border-color: var(--border-color);">
+            <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg surface-alt">${rec.level}</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="addRecommendedToLibrary('${rec.id}', false)" class="surface-alt px-3 py-1.5 rounded-xl text-xs font-bold">
+                Al catálogo
+              </button>
+              <button type="button" onclick="addRecommendedToLibrary('${rec.id}', true)" class="btn-primary px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1">
+                <i class="ph-bold ph-book-bookmark"></i> Prestar
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderRecomendacionesSection() {
+      const subjects = ['all', ...Object.keys(SUBJECT_STYLES)];
+      const list = RECOMMENDED_CATALOG.filter(r => recSubjectFilter === 'all' || r.subject === recSubjectFilter);
+
+      return `
+        <section class="hero-banner rounded-3xl p-6 sm:p-7 text-white shadow-lg mb-6 relative overflow-hidden">
+          <div class="relative z-10 max-w-2xl">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-full mb-2.5">
+              <i class="ph-fill ph-sparkle text-amber-300"></i> Selección Motivadora (${RECOMMENDED_CATALOG.length} títulos)
+            </span>
+            <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Recomendaciones de Lectura</h2>
+            <p class="text-white/90 text-sm mt-1.5 leading-relaxed">
+              Cada libro incluye un resumen pensado para despertar tu interés y el motivo por el que vale la pena abrir sus páginas hoy.
+            </p>
+          </div>
+        </section>
+
+        <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 pb-1">
+          ${subjects.map(sub => `
+            <button type="button" onclick="recSubjectFilter = '${sub}'; renderView();"
+              class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${recSubjectFilter === sub ? 'btn-primary shadow-sm' : 'surface-card'}">
+              ${sub === 'all' ? `Todas (${RECOMMENDED_CATALOG.length})` : sub}
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          ${list.map(r => renderRecommendedCard(r, false)).join('')}
+        </div>
+      `;
+    }
+
+    function renderMateriasSection() {
+      const subjectNames = Object.keys(SUBJECT_STYLES);
+      const counts = {};
+      subjectNames.forEach(s => { counts[s] = 0; });
+      RECOMMENDED_CATALOG.forEach(b => { if (counts[b.subject] !== undefined) counts[b.subject]++; });
+
+      const list = RECOMMENDED_CATALOG.filter(b => {
+        const matchSub = subjectSelected === 'all' || b.subject === subjectSelected;
+        const q = subjectSearch.toLowerCase();
+        const matchTxt = !q ||
+          b.title.toLowerCase().includes(q) ||
+          b.author.toLowerCase().includes(q) ||
+          b.subject.toLowerCase().includes(q) ||
+          b.motivatingSummary.toLowerCase().includes(q);
+        return matchSub && matchTxt;
+      });
+
+      return `
+        <div class="mb-6">
+          <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Libros por Materia 🗂️</h2>
+          <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Filtra por disciplina: Programación, Matemáticas, Física, Literatura, Filosofía, Historia, Psicología y Arte.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          ${subjectNames.map(sub => {
+            const st = SUBJECT_STYLES[sub];
+            const active = subjectSelected === sub;
+            return `
+              <button type="button" onclick="subjectSelected = '${active ? 'all' : sub}'; renderView();"
+                class="surface-card rounded-2xl p-3.5 text-left transition-all ${active ? 'ring-2 ring-amber-600 badge-soft' : 'hover:opacity-95'}">
+                <div class="flex items-center justify-between mb-1.5">
+                  <i class="ph-fill ${st.icon} text-xl" style="color: var(--accent-primary);"></i>
+                  <span class="font-mono text-xs font-bold px-2 py-0.5 rounded-full surface-alt">${counts[sub]}</span>
+                </div>
+                <strong class="text-xs sm:text-sm font-bold block leading-snug">${sub}</strong>
+              </button>
+            `;
+          }).join('')}
+        </div>
+
+        <div class="surface-card rounded-2xl p-4 mb-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div class="relative flex-1">
+            <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2" style="color: var(--text-muted);"></i>
+            <input type="text" value="${subjectSearch}" oninput="subjectSearch = this.value; renderView();"
+              placeholder="Buscar libro, autor o tema..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+          </div>
+          <span class="text-xs font-bold px-3 py-2 rounded-xl badge-soft shrink-0 text-center">
+            ${subjectSelected === 'all' ? 'Todas las materias' : subjectSelected} (${list.length})
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          ${list.map(r => renderRecommendedCard(r, false)).join('')}
+        </div>
+      `;
+    }
+
+    /* --- CREDENCIAL DE 2 LADOS (FRENTE Y REVERSO + DESCARGA PDF) --- */
+    function renderCredencialSection() {
+      const reader = libState.readers.find(r => r.id === selectedCredentialReaderId) || libState.readers[0] || null;
+      const activeCount = reader
+        ? libState.loans.filter(l => l.status === 'active' && l.readerId === reader.id).length
+        : 0;
+      const newCode = generateCode('CRD');
+
+      return `
+        <div class="mb-6">
+          <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Credencial de Lector (2 Lados PDF) 🪪</h2>
+          <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Crea credenciales con frente y reverso, descárgalas en PDF para imprimir o envíalas a impresión.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div class="lg:col-span-5 flex flex-col gap-5">
+            <form id="add-reader-form" class="surface-card spine-accent rounded-3xl p-5">
+              <div class="flex items-center justify-between gap-2 mb-3.5 pl-2">
+                <h3 class="font-serif font-bold text-xl">Nuevo lector</h3>
+                <span class="font-mono text-[11px] px-2.5 py-1 rounded-full badge-soft">${newCode}</span>
+              </div>
+
+              <div class="space-y-3 pl-2">
+                <div>
+                  <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Nombre completo *</label>
+                  <input id="rd-name" type="text" required placeholder="Ej. Mateo Silva" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Código credencial *</label>
+                    <input id="rd-code" type="text" value="${newCode}" required class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Categoría</label>
+                    <select id="rd-category" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none">
+                      <option value="Estudiante">Estudiante</option>
+                      <option value="Docente">Docente</option>
+                      <option value="Investigador">Investigador</option>
+                      <option value="Público General">Público General</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Correo</label>
+                    <input id="rd-email" type="email" placeholder="lector@correo.com" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Teléfono</label>
+                    <input id="rd-phone" type="text" placeholder="55-0000-0000" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+                  </div>
+                </div>
+                <label class="cursor-pointer w-full px-3.5 py-2.5 rounded-xl text-xs font-bold badge-soft flex items-center justify-center gap-1.5">
+                  <i class="ph-bold ph-camera"></i> <span id="rd-photo-label">Subir foto de perfil (opcional)</span>
+                  <input id="rd-photo-file" type="file" accept="image/*" class="hidden" />
+                </label>
+                <button type="submit" class="btn-primary w-full py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow">
+                  <i class="ph-bold ph-identification-badge text-lg"></i> Emitir credencial
+                </button>
+              </div>
+            </form>
+
+            <div class="surface-card rounded-3xl p-5">
+              <h3 class="font-serif font-bold text-lg mb-3">Lectores (${libState.readers.length})</h3>
+              <div class="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+                ${libState.readers.map(r => {
+                  const sel = reader && r.id === reader.id;
+                  return `
+                    <button type="button" onclick="selectedCredentialReaderId = '${r.id}'; renderView();"
+                      class="w-full text-left p-3 rounded-2xl border flex items-center justify-between gap-3 ${sel ? 'ring-2 ring-amber-600 badge-soft' : 'surface-alt'}">
+                      <div class="min-w-0">
+                        <strong class="text-sm block truncate">${r.name}</strong>
+                        <span class="font-mono text-[11px] block truncate" style="color: var(--text-secondary);">${r.cardCode} • ${r.category}</span>
+                      </div>
+                      <span class="text-xs font-bold shrink-0">${sel ? 'Activa' : 'Ver →'}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 surface-card rounded-3xl p-5 sm:p-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 class="font-serif font-bold text-xl">Vista Previa Frente y Reverso</h3>
+                <p class="text-xs" style="color: var(--text-secondary);">Descarga un PDF de 2 páginas (Frente en pág. 1 y Reverso en pág. 2).</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="downloadCredentialPDF()" ${!reader ? 'disabled' : ''}
+                  class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow disabled:opacity-40">
+                  <i class="ph-bold ph-file-pdf text-base"></i> Descargar PDF (2 lados)
+                </button>
+                <button type="button" onclick="printCredentialBothSides()" ${!reader ? 'disabled' : ''}
+                  class="surface-alt px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+                  <i class="ph-bold ph-printer text-base"></i> Imprimir
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-2 mb-4">
+              <button type="button" onclick="credentialSidePreview = 'both'; renderView();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${credentialSidePreview === 'both' ? 'btn-primary' : 'surface-alt'}">Ambos lados</button>
+              <button type="button" onclick="credentialSidePreview = 'front'; renderView();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${credentialSidePreview === 'front' ? 'btn-primary' : 'surface-alt'}">Solo Frente</button>
+              <button type="button" onclick="credentialSidePreview = 'back'; renderView();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${credentialSidePreview === 'back' ? 'btn-primary' : 'surface-alt'}">Solo Reverso</button>
+            </div>
+
+            ${!reader ? `
+              <div class="surface-alt rounded-2xl p-8 text-center text-sm" style="color: var(--text-muted);">No hay lectores registrados.</div>
+            ` : `
+              <div id="printable-credential-zone" class="grid grid-cols-1 md:grid-cols-${credentialSidePreview === 'both' ? '2' : '1'} gap-4 items-stretch">
+                ${credentialSidePreview !== 'back' ? `
+                  <div class="rounded-3xl overflow-hidden border-2 shadow-md bg-[#fffdf9] text-[#241911] flex flex-col justify-between" style="border-color: #7c3f1d;">
+                    <div class="px-4 py-3 text-white flex items-center justify-between gap-2" style="background: linear-gradient(120deg, #47200e 0%, #7c3f1d 60%, #1b5e43 100%);">
+                      <div class="min-w-0">
+                        <span class="font-serif font-extrabold text-sm leading-none block truncate">${libState.settings.libraryName}</span>
+                        <span class="text-[9px] uppercase tracking-widest text-amber-200">Frente • Credencial de Lector</span>
+                      </div>
+                      <span class="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-white/15 shrink-0">${reader.category}</span>
+                    </div>
+
+                    <div class="p-4 flex gap-3 items-center">
+                      <div class="w-16 h-20 rounded-xl overflow-hidden border shrink-0 flex items-center justify-center bg-[#f5e5cf]" style="border-color: #d6be9b;">
+                        ${reader.avatar
+                          ? `<img src="${reader.avatar}" alt="${reader.name}" class="w-full h-full object-cover" onerror="this.style.display='none'" />`
+                          : `<i class="ph-fill ph-user text-3xl text-[#7c3f1d]"></i>`}
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-[9px] font-bold uppercase text-[#8a715c] block">Titular</span>
+                        <h4 class="font-serif font-extrabold text-lg leading-tight truncate">${reader.name}</h4>
+                        <p class="font-mono text-xs font-bold text-[#7c3f1d] mt-0.5">${reader.cardCode}</p>
+                        <div class="grid grid-cols-2 gap-1.5 mt-2 text-[10px] text-[#5c4634]">
+                          <div><span class="block text-[8px] uppercase text-[#8a715c]">Emisión</span><strong class="font-mono">${formatDateES(reader.issuedDate)}</strong></div>
+                          <div><span class="block text-[8px] uppercase text-[#8a715c]">Vigencia</span><strong class="font-mono">${formatDateES(reader.validUntil)}</strong></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="px-4 py-2.5 bg-[#faf4e8] border-t border-[#e4d4bc] flex items-center justify-between gap-3">
+                      <div class="flex-1 min-w-0">
+                        <div class="barcode-bars w-full rounded-sm opacity-90"></div>
+                        <span class="font-mono text-[9px] tracking-[0.16em] text-[#5c4634] block mt-0.5 truncate">${reader.cardCode}</span>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <span class="text-[9px] uppercase text-[#8a715c] block">Préstamos</span>
+                        <strong class="font-mono text-xs">${activeCount}/${libState.settings.maxLoansPerReader}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${credentialSidePreview !== 'front' ? `
+                  <div class="rounded-3xl overflow-hidden border-2 shadow-md bg-[#faf4e8] text-[#241911] flex flex-col justify-between" style="border-color: #1b5e43;">
+                    <div class="px-4 py-2.5 bg-[#1b5e43] text-white flex items-center justify-between gap-2">
+                      <span class="text-[10px] font-bold uppercase tracking-wider truncate">Reverso • Condiciones de Uso</span>
+                      <span class="font-mono text-[10px] text-amber-200 shrink-0">${reader.cardCode}</span>
+                    </div>
+
+                    <div class="p-4 text-[11px] space-y-2 text-[#473425] leading-snug">
+                      <p>• <strong>Plazo habitual:</strong> ${libState.settings.defaultLoanDays} días naturales por préstamo.</p>
+                      <p>• <strong>Límite de ejemplares:</strong> Máximo ${libState.settings.maxLoansPerReader} libros simultáneos.</p>
+                      <p>• <strong>Retrasos:</strong> Cargo estimado de ${libState.settings.currencySymbol}${Number(libState.settings.dailyFineAmount || 0).toFixed(2)} por día vencido.</p>
+                      <p>• <strong>Conservación:</strong> Devuelve las obras en buen estado y a tiempo.</p>
+                    </div>
+
+                    <div class="px-4 py-2.5 bg-[#f2e7d3] border-t border-[#e0cfb2] flex items-center justify-between text-[10px] text-[#5c4634]">
+                      <span>Personal e intransferible</span>
+                      <span class="font-serif italic font-bold text-[#7c3f1d]">${libState.settings.libraryName}</span>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function downloadCredentialPDF() {
+      const reader = libState.readers.find(r => r.id === selectedCredentialReaderId) || libState.readers[0];
+      if (!reader) return;
+
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        showToast('jsPDF no disponible en este momento; abriendo impresión de ambos lados.', 'info');
+        printCredentialBothSides();
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [95, 145] });
+      const w = 145;
+      const h = 95;
+      const activeCount = libState.loans.filter(l => l.status === 'active' && l.readerId === reader.id).length;
+
+      // Frente (Página 1)
+      doc.setFillColor(255, 253, 249);
+      doc.rect(0, 0, w, h, 'F');
+      doc.setDrawColor(124, 63, 29);
+      doc.setLineWidth(1.2);
+      doc.roundedRect(4, 4, w - 8, h - 8, 4, 4, 'S');
+
+      doc.setFillColor(124, 63, 29);
+      doc.roundedRect(5, 5, w - 10, 18, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('times', 'bold');
+      doc.setFontSize(13);
+      doc.text(libState.settings.libraryName, 10, 14);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(253, 230, 138);
+      doc.text('CREDENCIAL OFICIAL DE LECTOR • FRENTE', 10, 19.5);
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(reader.category.toUpperCase(), w - 10, 16, { align: 'right' });
+
+      doc.setFillColor(245, 229, 207);
+      doc.setDrawColor(180, 140, 100);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(10, 28, 26, 34, 3, 3, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(124, 63, 29);
+      const initials = reader.name.split(' ').slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || 'LC';
+      doc.text(initials, 23, 47, { align: 'center' });
+
+      if (reader.avatar && reader.avatar.startsWith('data:image/')) {
+        try {
+          const fmt = reader.avatar.includes('png') ? 'PNG' : 'JPEG';
+          doc.addImage(reader.avatar, fmt, 10.5, 28.5, 25, 33);
+        } catch (e) {}
+      }
+
+      doc.setTextColor(120, 100, 80);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.text('TITULAR', 41, 33);
+
+      doc.setTextColor(36, 25, 17);
+      doc.setFont('times', 'bold');
+      doc.setFontSize(14);
+      doc.text(reader.name, 41, 40, { maxWidth: w - 50 });
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(124, 63, 29);
+      doc.text(`ID: ${reader.cardCode}`, 41, 47);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(92, 70, 52);
+      doc.text(`Emisión: ${formatDateES(reader.issuedDate)}`, 41, 54);
+      doc.text(`Vigencia: ${formatDateES(reader.validUntil)}`, 41, 60);
+
+      doc.setFillColor(250, 244, 232);
+      doc.rect(6, 70, w - 12, 18, 'F');
+      doc.setFillColor(36, 25, 17);
+      for (let x = 11, i = 0; x < w - 42; x += 2.2, i++) {
+        const bw = (i % 3 === 0) ? 1.4 : 0.7;
+        doc.rect(x, 73, bw, 8, 'F');
+      }
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7.5);
+      doc.text(reader.cardCode, 11, 85);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Préstamos: ${activeCount}/${libState.settings.maxLoansPerReader}`, w - 11, 80, { align: 'right' });
+
+      // Reverso (Página 2)
+      doc.addPage([95, 145], 'landscape');
+      doc.setFillColor(250, 244, 232);
+      doc.rect(0, 0, w, h, 'F');
+      doc.setDrawColor(27, 94, 67);
+      doc.setLineWidth(1.2);
+      doc.roundedRect(4, 4, w - 8, h - 8, 4, 4, 'S');
+
+      doc.setFillColor(27, 94, 67);
+      doc.roundedRect(5, 5, w - 10, 14, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.text('REVERSO • NORMAS DE PRÉSTAMO Y DEVOLUCIÓN', 10, 14);
+      doc.setFont('courier', 'bold');
+      doc.text(reader.cardCode, w - 10, 14, { align: 'right' });
+
+      doc.setTextColor(36, 25, 17);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      const lines = [
+        `• Plazo habitual de préstamo: ${libState.settings.defaultLoanDays} días naturales.`,
+        `• Máximo de ejemplares simultáneos: ${libState.settings.maxLoansPerReader} por lector.`,
+        `• Penalización estimada por retraso: ${libState.settings.currencySymbol}${Number(libState.settings.dailyFineAmount || 0).toFixed(2)} por día.`,
+        '• Cuida el ejemplar y devuélvelo en o antes de la fecha indicada.'
+      ];
+      let yPos = 28;
+      lines.forEach(txt => {
+        const wrapped = doc.splitTextToSize(txt, w - 20);
+        doc.text(wrapped, 10, yPos);
+        yPos += wrapped.length * 5.2 + 2.5;
+      });
+
+      doc.setDrawColor(210, 195, 175);
+      doc.line(10, h - 16, w - 10, h - 16);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7.5);
+      doc.setTextColor(124, 63, 29);
+      doc.text(`${libState.settings.libraryName} • Credencial de 2 lados para impresión`, w / 2, h - 9, { align: 'center' });
+
+      const slug = reader.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      doc.save(`credencial-2-lados-${slug}-${reader.cardCode}.pdf`);
+      addAuditLog('CREDENCIAL', reader.cardCode, `PDF de 2 lados descargado: ${reader.name}`, 'Frente y Reverso incluidos');
+      saveLibraryState();
+      playUiClick(760);
+      showToast(`📄 PDF de 2 lados generado para ${reader.name}.`);
+    }
+
+    function printCredentialBothSides() {
+      const prev = credentialSidePreview;
+      credentialSidePreview = 'both';
+      renderView();
+      setTimeout(() => {
+        window.print();
+        credentialSidePreview = prev;
+        renderView();
+      }, 120);
+    }
+
+    function bindCredentialFormEvents() {
+      const form = document.getElementById('add-reader-form');
+      const fileInp = document.getElementById('rd-photo-file');
+      const lbl = document.getElementById('rd-photo-label');
+
+      if (fileInp) {
+        fileInp.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            tempReaderAvatarData = ev.target.result;
+            if (lbl) lbl.textContent = 'Foto cargada ✓';
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const name = document.getElementById('rd-name').value.trim();
+          const cardCode = document.getElementById('rd-code').value.trim().toUpperCase() || generateCode('CRD');
+          const category = document.getElementById('rd-category').value;
+
+          const newReader = {
+            id: 'rd-' + Date.now(),
+            cardCode,
+            name,
+            email: document.getElementById('rd-email').value.trim(),
+            phone: document.getElementById('rd-phone').value.trim(),
+            category,
+            issuedDate: getDateISO(0),
+            validUntil: getDateISO(365),
+            avatar: tempReaderAvatarData || ''
+          };
+
+          libState.readers.unshift(newReader);
+          selectedCredentialReaderId = newReader.id;
+          tempReaderAvatarData = '';
+          addAuditLog('CREDENCIAL', cardCode, `Nueva credencial emitida: ${name}`, `Categoría: ${category}`);
+          saveLibraryState();
+          playUiClick(660);
+          showToast(`🪪 Credencial ${cardCode} lista para ${name}.`);
+          renderView();
+        });
+      }
+    }
+
+    /* --- CÓDIGOS Y REGISTROS DE BIBLIOTECA --- */
+    function generateNewCatalogCodeEntry() {
+      const code = generateCode('REG');
+      addAuditLog('REGISTRO', code, `Código de registro generado: ${code}`, 'Listo para etiquetar ejemplar o expediente');
+      saveLibraryState();
+      playUiClick(680);
+      showToast(`🏷️ Código ${code} generado y registrado.`);
+      renderView();
+    }
+
+    function renderCodigosSection() {
+      const allCodeItems = [
+        ...libState.books.map(b => ({ code: b.regCode, kind: 'LIBRO', title: b.title, meta: `${b.author} • ${b.shelf || 'Estante'}` })),
+        ...libState.readers.map(r => ({ code: r.cardCode, kind: 'CREDENCIAL', title: r.name, meta: `${r.category} • Vigencia ${formatDateES(r.validUntil)}` })),
+        ...libState.loans.map(l => {
+          const bk = libState.books.find(b => b.id === l.bookId);
+          return { code: l.folio, kind: 'PRESTAMO', title: bk ? bk.title : 'Préstamo', meta: `Devolución: ${formatDateES(l.dueDate)}` };
+        })
+      ];
+
+      const filteredCodes = allCodeItems.filter(item => {
+        const matchType = codeFilterType === 'all' || item.kind === codeFilterType;
+        const q = codeSearchQuery.toLowerCase();
+        const matchQ = !q || item.code.toLowerCase().includes(q) || item.title.toLowerCase().includes(q) || item.meta.toLowerCase().includes(q);
+        return matchType && matchQ;
+      });
+
+      return `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Códigos y Registros de Biblioteca 🏷️</h2>
+            <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Consulta códigos de libros (LIB/PRG/MAT/FIS), credenciales (CRD) y folios de préstamo (PRT).</p>
+          </div>
+          <button type="button" onclick="generateNewCatalogCodeEntry()" class="btn-primary px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow shrink-0">
+            <i class="ph-bold ph-barcode"></i> Generar código REG
+          </button>
+        </div>
+
+        <div class="surface-card rounded-2xl p-4 mb-5 flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2" style="color: var(--text-muted);"></i>
+            <input type="text" value="${codeSearchQuery}" oninput="codeSearchQuery = this.value; renderView();"
+              placeholder="Buscar código o título..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+          </div>
+          <div class="flex gap-1.5 overflow-x-auto no-scrollbar">
+            ${['all', 'LIBRO', 'CREDENCIAL', 'PRESTAMO'].map(t => `
+              <button type="button" onclick="codeFilterType = '${t}'; renderView();"
+                class="px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${codeFilterType === t ? 'btn-primary' : 'surface-alt'}">
+                ${t === 'all' ? 'Todos' : t}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-7">
+          ${filteredCodes.map(c => `
+            <div class="surface-card rounded-2xl p-4 flex flex-col justify-between gap-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-xs font-bold px-2.5 py-1 rounded badge-soft">${c.code}</span>
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded surface-alt">${c.kind}</span>
+              </div>
+              <div>
+                <strong class="font-serif font-bold text-base block truncate">${c.title}</strong>
+                <span class="text-xs block truncate" style="color: var(--text-secondary);">${c.meta}</span>
+              </div>
+              <div class="barcode-bars w-full opacity-75 rounded-sm mt-1"></div>
+            </div>
+          `).join('')}
+        </div>
+
+        <section class="surface-card rounded-3xl p-5">
+          <h3 class="font-serif font-bold text-lg mb-3">Bitácora reciente de movimientos</h3>
+          <div class="divide-y" style="border-color: var(--border-color);">
+            ${libState.auditLogs.slice(0, 10).map(log => `
+              <div class="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                <div class="min-w-0">
+                  <span class="font-mono font-bold px-2 py-0.5 rounded bg-black/5 mr-2">${log.code}</span>
+                  <strong>${log.title}</strong>
+                  ${log.detail ? `<span class="block sm:inline sm:ml-2" style="color: var(--text-secondary);">${log.detail}</span>` : ''}
+                </div>
+                <span class="font-mono text-[11px] shrink-0" style="color: var(--text-muted);">${log.timestamp}</span>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    /* --- ALERTAS Y VENCIMIENTOS --- */
+    function sendLoanNotice(loanId) {
+      const loan = libState.loans.find(l => l.id === loanId);
+      if (!loan) return;
+      const bk = libState.books.find(b => b.id === loan.bookId);
+      const rd = libState.readers.find(r => r.id === loan.readerId);
+      loan.remindersSent = (Number(loan.remindersSent) || 0) + 1;
+      addAuditLog('RECORDATORIO', loan.folio, `Aviso #${loan.remindersSent} enviado a ${rd ? rd.name : 'Lector'}`, `Libro: "${bk ? bk.title : 'Libro'}" • Límite: ${formatDateES(loan.dueDate)}`);
+      saveLibraryState();
+      playUiClick(620);
+      showToast(`📩 Aviso #${loan.remindersSent} registrado.`);
+      renderView();
+    }
+
+    function renderAlertasSection() {
+      const active = libState.loans.filter(l => l.status === 'active');
+      const overdue = active.filter(l => evaluateLoan(l).code === 'overdue');
+      const dueSoon = active.filter(l => evaluateLoan(l).code === 'due-soon');
+      const onTime = active.filter(l => evaluateLoan(l).code === 'on-time');
+
+      function renderCard(l) {
+        const bk = libState.books.find(b => b.id === l.bookId);
+        const rd = libState.readers.find(r => r.id === l.readerId);
+        const ev = evaluateLoan(l);
+        return `
+          <div class="surface-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-mono text-xs font-bold px-2 py-0.5 rounded badge-soft">${l.folio}</span>
+                <strong class="text-sm">${bk ? bk.title : 'Libro'}</strong>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${ev.badgeClass}">${ev.label}</span>
+              </div>
+              <p class="text-xs mt-1" style="color: var(--text-secondary);">
+                Lector: <strong>${rd ? rd.name : '—'}</strong> • Devolución: <strong>${formatDateES(l.dueDate)}</strong>
+                ${ev.overdueDays > 0 ? `• Multa: <strong class="text-rose-600">${ev.fineFormatted}</strong>` : ''}
+                ${l.remindersSent > 0 ? `• <strong>${l.remindersSent} aviso(s)</strong>` : ''}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 shrink-0">
+              <button type="button" onclick="sendLoanNotice('${l.id}')" class="surface-alt px-3 py-2 rounded-xl text-xs font-bold">Avisar</button>
+              <button type="button" onclick="renewLoan('${l.id}')" class="surface-alt px-3 py-2 rounded-xl text-xs font-bold">Renovar</button>
+              <button type="button" onclick="returnLoan('${l.id}')" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-bold">Devolver</button>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="mb-6">
+          <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Alertas y Devoluciones 🔔</h2>
+          <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Seguimiento de fechas de devolución vencidas, próximas y al día.</p>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="font-serif font-bold text-xl text-rose-700 mb-3">Vencidos (${overdue.length})</h3>
+          ${overdue.length === 0 ? `<p class="surface-alt rounded-2xl p-4 text-xs" style="color: var(--text-muted);">Sin préstamos vencidos.</p>` : `<div class="flex flex-col gap-3">${overdue.map(renderCard).join('')}</div>`}
+        </div>
+
+        <div class="mb-6">
+          <h3 class="font-serif font-bold text-xl text-amber-700 mb-3">Vencen hoy o en 2 días (${dueSoon.length})</h3>
+          ${dueSoon.length === 0 ? `<p class="surface-alt rounded-2xl p-4 text-xs" style="color: var(--text-muted);">Sin vencimientos en 48 horas.</p>` : `<div class="flex flex-col gap-3">${dueSoon.map(renderCard).join('')}</div>`}
+        </div>
+
+        <div>
+          <h3 class="font-serif font-bold text-xl text-emerald-700 mb-3">Al día (${onTime.length})</h3>
+          ${onTime.length === 0 ? `<p class="surface-alt rounded-2xl p-4 text-xs" style="color: var(--text-muted);">Sin préstamos al día.</p>` : `<div class="flex flex-col gap-3">${onTime.map(renderCard).join('')}</div>`}
+        </div>
+      `;
+    }
+
+    /* --- AJUSTES --- */
+    function saveSettingsForm(e) {
+      e.preventDefault();
+      libState.settings.libraryName = document.getElementById('cfg-lib-name').value.trim() || 'Ateneo & Sala Viva';
+      libState.settings.readingGoalBooks = Math.max(1, parseInt(document.getElementById('cfg-goal').value, 10) || 12);
+      libState.settings.defaultLoanDays = Math.max(1, parseInt(document.getElementById('cfg-days').value, 10) || 14);
+      libState.settings.maxLoansPerReader = Math.max(1, parseInt(document.getElementById('cfg-max').value, 10) || 4);
+      libState.settings.dailyFineAmount = Math.max(0, parseFloat(document.getElementById('cfg-fine').value) || 0);
+      libState.settings.currencySymbol = document.getElementById('cfg-curr').value.trim() || '$';
+      saveLibraryState();
+      renderNavMenus();
+      playUiClick(640);
+      showToast('⚙️ Ajustes guardados.');
+      renderView();
+    }
+
+    function exportBackupJSON() {
+      const blob = new Blob([JSON.stringify(libState, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ateneo-biblioteca-${getDateISO(0)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('📦 Respaldo JSON descargado.');
+    }
+
+    function importBackupJSON(ev) {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed.books) || !Array.isArray(parsed.readers) || !Array.isArray(parsed.loans)) {
+            showToast('Archivo JSON inválido.', 'danger');
+            return;
+          }
+          libState = { ...createInitialState(), ...parsed };
+          applyLibraryTheme(libState.settings.theme);
+          saveLibraryState();
+          renderNavMenus();
+          showToast('📥 Respaldo importado correctamente.');
+          renderView();
+        } catch (err) {
+          showToast('No se pudo leer el JSON.', 'danger');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function restoreDemoState() {
+      libState = createInitialState();
+      applyLibraryTheme(libState.settings.theme);
+      saveLibraryState();
+      renderNavMenus();
+      showToast('Datos de ejemplo restaurados.');
+      renderView();
+    }
+
+    function renderAjustesSection() {
+      const s = libState.settings;
+      return `
+        <div class="max-w-3xl mx-auto space-y-5">
+          <div>
+            <h2 class="font-serif font-extrabold text-2xl sm:text-3xl">Ajustes de Biblioteca ⚙️</h2>
+            <p class="text-sm mt-0.5" style="color: var(--text-secondary);">Configura plazos de préstamo, temas, sonidos ambientales para lectura y respaldos.</p>
+          </div>
+
+          <form onsubmit="saveSettingsForm(event)" class="surface-card rounded-3xl p-5 sm:p-6">
+            <h3 class="font-serif font-bold text-xl mb-4">Políticas y Meta Lectora</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Nombre de la biblioteca</label>
+                <input id="cfg-lib-name" type="text" value="${s.libraryName}" class="w-full px-3.5 py-2.5 rounded-xl text-sm surface-alt outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Meta de lectura / devoluciones</label>
+                <input id="cfg-goal" type="number" min="1" max="200" value="${s.readingGoalBooks || 12}" class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Días de préstamo por defecto</label>
+                <input id="cfg-days" type="number" min="1" max="120" value="${s.defaultLoanDays}" class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Máx. préstamos por lector</label>
+                <input id="cfg-max" type="number" min="1" max="20" value="${s.maxLoansPerReader}" class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Multa diaria por retraso</label>
+                <input id="cfg-fine" type="number" min="0" step="0.5" value="${s.dailyFineAmount}" class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase mb-1" style="color: var(--text-muted);">Moneda</label>
+                <input id="cfg-curr" type="text" maxlength="4" value="${s.currencySymbol}" class="w-full px-3.5 py-2.5 rounded-xl text-sm font-mono surface-alt outline-none" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold">Guardar ajustes</button>
+          </form>
+
+          <section class="surface-card rounded-3xl p-5 sm:p-6">
+            <h3 class="font-serif font-bold text-xl mb-3">Apariencia</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button type="button" onclick="libState.settings.theme = 'wood-parchment'; applyLibraryTheme('wood-parchment'); saveLibraryState(); renderView();"
+                class="p-3.5 rounded-2xl border text-left ${s.theme === 'wood-parchment' ? 'ring-2 ring-amber-700 badge-soft' : 'surface-alt'}">
+                <strong class="text-sm block">Madera y Pergamino</strong>
+                <span class="text-xs" style="color: var(--text-secondary);">Cálido y clásico.</span>
+              </button>
+              <button type="button" onclick="libState.settings.theme = 'emerald-grove'; applyLibraryTheme('emerald-grove'); saveLibraryState(); renderView();"
+                class="p-3.5 rounded-2xl border text-left ${s.theme === 'emerald-grove' ? 'ring-2 ring-emerald-700 badge-soft' : 'surface-alt'}">
+                <strong class="text-sm block">Bosque Esmeralda</strong>
+                <span class="text-xs" style="color: var(--text-secondary);">Fresco y sereno.</span>
+              </button>
+              <button type="button" onclick="libState.settings.theme = 'night-reading'; applyLibraryTheme('night-reading'); saveLibraryState(); renderView();"
+                class="p-3.5 rounded-2xl border text-left ${s.theme === 'night-reading' ? 'ring-2 ring-amber-400 badge-soft' : 'surface-alt'}">
+                <strong class="text-sm block">Lectura Nocturna</strong>
+                <span class="text-xs" style="color: var(--text-secondary);">Oscuro suave.</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="surface-card rounded-3xl p-5 sm:p-6">
+            <h3 class="font-serif font-bold text-xl mb-3">Sonido Ambiental para Leer</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
+              ${[
+                { id: 'reading-chimney', name: 'Sala de Lectura y Chimenea', desc: 'Calidez suave y chisporroteo de hogar' },
+                { id: 'rain-window', name: 'Lluvia en Ventana de Biblioteca', desc: 'Lluvia continua para concentrarse' },
+                { id: 'quiet-pages', name: 'Páginas y Tarde Tranquila', desc: 'Acordes suaves de lectura' },
+                { id: 'mute', name: 'Silencio', desc: 'Sin sonido ambiental' }
+              ].map(opt => {
+                const active = (s.ambientMode || 'reading-chimney') === opt.id && (opt.id === 'mute' ? !AudioEngine.playing : AudioEngine.playing);
+                return `
+                  <button type="button" onclick="libState.settings.ambientMode = '${opt.id}'; saveLibraryState(); startLibraryAmbient('${opt.id}'); renderView();"
+                    class="p-3.5 rounded-2xl border text-left ${active ? 'ring-2 ring-amber-600 badge-soft' : 'surface-alt'}">
+                    <strong class="text-xs sm:text-sm block">${opt.name}</strong>
+                    <span class="text-[11px] block mt-0.5" style="color: var(--text-secondary);">${opt.desc}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+
+            <div class="mb-3">
+              <div class="flex justify-between text-xs font-bold mb-1">
+                <span>Volumen ambiental</span>
+                <span>${Math.round((s.ambientVolume ?? 0.35) * 100)}%</span>
+              </div>
+              <input type="range" min="0" max="1" step="0.05" value="${s.ambientVolume ?? 0.35}"
+                oninput="setLibraryAmbientVolume(this.value); this.previousElementSibling.lastElementChild.textContent = Math.round(this.value * 100) + '%';"
+                class="w-full accent-amber-700 cursor-pointer" />
+            </div>
+
+            <label class="flex items-center justify-between cursor-pointer pt-3 border-t" style="border-color: var(--border-color);">
+              <span class="text-xs sm:text-sm font-semibold">Sonidos sutiles al pasar vistas y registrar</span>
+              <input type="checkbox" ${s.soundEffects ? 'checked' : ''} onchange="libState.settings.soundEffects = this.checked; saveLibraryState();" class="w-5 h-5 accent-amber-700" />
+            </label>
+          </section>
+
+          <section class="surface-card rounded-3xl p-5 sm:p-6">
+            <h3 class="font-serif font-bold text-xl mb-1">Respaldos</h3>
+            <p class="text-xs mb-4" style="color: var(--text-secondary);">Exporta o importa tus datos en JSON o restaura los ejemplos iniciales.</p>
+            <div class="flex flex-wrap gap-3">
+              <button type="button" onclick="exportBackupJSON()" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                <i class="ph-bold ph-download-simple"></i> Exportar JSON
+              </button>
+              <label class="cursor-pointer surface-alt px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                <i class="ph-bold ph-upload-simple"></i> Importar JSON
+                <input type="file" accept=".json,application/json" onchange="importBackupJSON(event)" class="hidden" />
+              </label>
+              <button type="button" onclick="restoreDemoState()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100">
+                Restablecer ejemplo
+              </button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    /* ========================================================================
+       7. ARRANQUE
+       ======================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      applyLibraryTheme(libState.settings.theme);
+      updateSidebarSummary();
+      updateAmbientBadges();
+      renderNavMenus();
+      renderView();
+      startSplashTimer10s();
+
+      const unlockAudio = () => {
+        if (!AudioEngine.playing && libState.settings.ambientMode && libState.settings.ambientMode !== 'mute') {
+          startLibraryAmbient(libState.settings.ambientMode);
+        }
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+      };
+      window.addEventListener('pointerdown', unlockAudio, { once: true });
+      window.addEventListener('keydown', unlockAudio, { once: true });
+    });
+  </script>
+</body>
+</html>

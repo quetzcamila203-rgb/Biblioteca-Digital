@@ -1,0 +1,29 @@
+# Dependencias y entornos
+node_modules/
+vendor/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Archivos de compilación y salida
+dist/
+build/
+target/
+out/
+*.log
+
+# Archivos del sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
